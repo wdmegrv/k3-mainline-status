@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% macro matrix(m, kind) %}
+<div class="matrix-wrap">
+<table class="matrix {{ kind }}">
+<thead>
+<tr>
+<th class="corner">{{ 'Group' if kind == 'f' else 'Domain' }}</th>
+<th class="corner">{{ 'Feature' if kind == 'f' else 'Component' }}</th>
+{% for c in cols %}<th class="col"><a href="{{ root }}{{ c.href }}">{{ c.name }}</a>{% if c.detail %}<small>{{ c.detail }}</small>{% endif %}</th>{% endfor %}
+</tr>
+</thead>
+<tbody>
+{% for g, rows in m.groups.items() %}
+{% for r in rows %}
+<tr{% if loop.first %} class="first"{% endif %}>
+{% if loop.first %}<th class="grp" rowspan="{{ rows|length }}">{{ g }}</th>{% endif %}
+<th class="row">{{ r.label }}{% if r.sub %}<small>{{ r.sub }}</small>{% endif %}</th>
+{% for cell in r.cells %}
+<td class="cell st-{{ cell.cls }}">{% if cell.href %}<a href="{{ root }}{{ cell.href }}" data-tip="{{ cell.tip }}"><i></i>{{ cell.text }}{% if cell.n %}<em class="np">{{ cell.n }}</em>{% endif %}</a>{% else %}<span data-tip="{{ cell.tip }}" tabindex="0">{% if cell.cls != 'na' %}<i></i>{% endif %}{{ cell.text }}</span>{% endif %}</td>
+{% endfor %}
+</tr>
+{% endfor %}
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endmacro %}
+
+{% block main %}
+<section class="hero">
+  <h1>TI K3 SoCs in mainline Linux</h1>
+  <p class="lede">Every feature and IP block of the TI K3 SoCs, compared between the TI vendor kernel and torvalds/master. One column per SoC; each cell links to the detail, hover for the gaps.</p>
+  <dl class="meta">
+    <div><dt>Mainline</dt><dd>{{ mainline or '–' }}{% if snapshot %} <small>{{ snapshot }}</small>{% endif %}</dd></div>
+    <div><dt>SoCs</dt><dd>{{ soc_ids|length }}</dd></div>
+  </dl>
+</section>
+
+<div class="legend">
+{% for title, classes in [('Upstream', ['ok', 'next', 'pending']), ('Gap', ['partial', 'missing']), ('Nothing to do', ['neutral', 'na'])] %}
+  <div class="lg-group">
+    <h3>{{ title }}</h3>
+    <dl>
+    {% for cls in classes %}<div class="lg st-{{ cls }}"><dt><i></i>{{ states[cls][0] }}</dt><dd>{{ states[cls][1] }}</dd></div>{% endfor %}
+    </dl>
+  </div>
+{% endfor %}
+  <div class="lg-group">
+    <h3>Cell mark</h3>
+    <dl>
+      <div class="lg"><dt><em class="np">12</em>Vendor patches</dt><dd>TI patches on the row's drivers, bindings or DT nodes that are not in mainline</dd></div>
+    </dl>
+  </div>
+</div>
+
+<section id="features">
+  <div class="section-head">
+    <h2>Features</h2>
+  </div>
+  {{ matrix(fm, 'f') }}
+</section>
+
+<section id="components">
+  <div class="section-head">
+    <h2>Components</h2>
+  </div>
+  {{ matrix(cm, 'c') }}
+</section>
+
+<section id="patches">
+  <div class="section-head">
+    <h2>Vendor patches</h2>
+  </div>
+  <div class="table-wrap"><table class="table vendor">
+    <thead><tr><th>SoC</th><th class="num">Commits on the base</th><th class="num">On features and components</th><th>By prefix</th><th class="num">Not upstream</th><th class="num">Landed since</th><th class="num">Features · components with some</th></tr></thead>
+    <tbody>
+    {% for v in vendor %}
+    <tr><th><a href="{{ root }}{{ v.href }}#patches">{{ v.name }}</a></th><td class="num">{{ v.commits or '–' }}</td><td class="num">{{ v.count }}</td><td>{% for k, (label, _) in patch_classes.items() %}{% if v.counts[k] %}<span class="pc pc-{{ k|pc }}">{{ label }}</span> {{ v.counts[k] }}&ensp;{% endif %}{% endfor %}</td><td class="num"><b>{{ v.pending }}</b></td><td class="num">{{ v.landed }}</td><td class="num">{{ v.features }} · {{ v.components }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <dl class="pkey">
+  {% for k, (label, meaning) in patch_classes.items() %}<div><dt><span class="pc pc-{{ k|pc }}">{{ label }}</span></dt><dd>{{ meaning }}.</dd></div>{% endfor %}
+    <div><dt><b>Not upstream</b></dt><dd>Posted, not posted, TI only and no prefix, minus the ones that landed.</dd></div>
+    <div><dt><b>Landed since</b></dt><dd>Posted or not posted when TI took it, but mainline has a commit with the same subject since TI's branch point.</dd></div>
+  </dl>
+  <p class="sub method"><b>Method.</b> A patch belongs to a feature when it touches the feature's files in <code>features/k3.yaml</code>, and to a component when it touches the component's driver or binding (found by its compatible) or its node in the SoC dtsi. Shared drivers count for every component using them.</p>
+</section>
+
+<section id="sources">
+  <div class="section-head">
+    <h2>Sources</h2>
+  </div>
+  {% set k = sources.kernel %}
+  <dl class="basis">
+    <div><dt>Vendor kernel</dt><dd>{% if k.ref_href %}<a class="mono" href="{{ k.ref_href }}">{{ k.ref }}</a>{% else %}–{% endif %}</dd></div>
+    <div><dt>TI SDK tag</dt><dd>{% if k.tag %}<a class="mono" href="{{ k.tag_href }}">{{ k.tag }}</a> <small>newest tag on the branch</small>{% else %}–{% endif %}</dd></div>
+    <div><dt>Mainline</dt><dd><span class="mono">{{ mainline or '–' }}</span>{% if snapshot %} <small>{{ snapshot }}</small>{% endif %}</dd></div>
+  </dl>
+  {% if k.others %}<p class="sub">{{ k.others|join(', ') }} ran on a different ref or tag; see the SoC page.</p>{% endif %}
+
+  <div class="src-grid">
+    <div>
+      <h3>TI documents per SoC</h3>
+      <div class="table-wrap"><table class="table srcs">
+        <thead><tr><th>Document</th>{% for c in cols %}<th>{{ c.name }}</th>{% endfor %}</tr></thead>
+        <tbody>
+        {% for r in sources.per_soc %}
+        <tr><th class="wrap">{{ r.name }}<small>{{ r.what }}</small></th>{% for label, href in r.cells %}<td>{% if href %}<a href="{{ href }}">{{ label }}</a>{% else %}<span class="dim">–</span>{% endif %}</td>{% endfor %}</tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <h3>Repositories</h3>
+      <div class="table-wrap"><table class="table srcs">
+        <thead><tr><th>Repository</th><th>Links</th></tr></thead>
+        <tbody>
+        {% for r in sources.repos %}
+        <tr><th class="wrap">{{ r.name }}<small>{{ r.what }}</small></th><td>{% for label, href in r.links %}<a href="{{ href }}">{{ label }}</a>{% if not loop.last %}<br>{% endif %}{% endfor %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <aside class="disclaimer" role="note">
+    <h3>Generated with an LLM</h3>
+    <p>The inventories, states, patch classes and texts on this site were produced by an LLM (Claude) from the sources above and are only spot-checked. They can be wrong or incomplete. No responsibility is taken for wrong information; check the TI kernel, mainline and lore before relying on a cell.</p>
+  </aside>
+</section>
+
+{% endblock %}

@@ -1,0 +1,484 @@
+# Feature definitions for TI K3 SoCs: which nodes, drivers, Kconfig and firmware make up each feature.
+#
+# One mapping per feature, keyed by a short id. Keys (all optional except name and socs):
+#   name       wording used in the Features table and the report
+#   group      column group on the status site (site/build.py); short = the column label there
+#   short      short label for the site's feature matrix
+#   socs       SoCs that have the feature: am62x am62ax am62px am67x am64x (am62lx, am68x: add when needed)
+#   nodes      fnmatch globs on DT labels / node names of the SoC
+#   tisci      globs on TISCI device names (without the <SOC>_DEV_ prefix); a match without a DT node = undescribed
+#   drivers    driver files or directories; present upstream = fine, only downstream = gap, nowhere = absent
+#   kconfig    symbols looked up in both Kconfig trees and in the defconfig
+#   firmware   globs in ti-linux-firmware; {fw} = TI's firmware directory name of the SoC
+#   patches    case-insensitive regex over downstream patch subjects ("." = every patch touching paths)
+#   paths      git-log paths for the patch regex (default: the drivers above); {dts} = the SoC's own DT files
+#   userspace  what is needed beyond the kernel (manual, informational)
+#   notes      free text, copied to the table
+#
+# Facts behind the socs lists come from the vendor SoC dtsi files and TI's TISCI device lists
+# (12.01 SDK kernel, Oct 2026): AM62Ax has no GPU and no PRU; AM62Px and AM67x have no PRU;
+# only AM64x has an ADC and ICSSG; only AM62x/AM62Ax/AM62Px define system idle states.
+
+display:
+  name: 'Display: DSS, OLDI, DSI'
+  group: Multimedia
+  short: Display
+  socs: [am62x, am62ax, am62px, am67x]
+  nodes: [dss*, oldi*, dsi*]
+  tisci: [DSS*, DSI*]
+  drivers: [drivers/gpu/drm/tidss, drivers/gpu/drm/bridge/cadence/cdns-dsi-j721e.c]
+  kconfig: [DRM_TIDSS, DRM_CDNS_DSI_J721E]
+  patches: .
+  userspace: 'DRM/KMS: weston, Qt; panel/bridge drivers are board scope'
+  notes: 'AM62x: one DSS, two OLDI TXes; AM62Px/AM67x: DSS0+DSS1, OLDI, DSI; AM62Ax: DPI only'
+
+gpu:
+  name: 'GPU: PowerVR Rogue (AXE / BXS)'
+  group: Multimedia
+  short: GPU
+  socs: [am62x, am62px, am67x]
+  nodes: [gpu]
+  tisci: [GPU0]
+  drivers: [drivers/gpu/drm/imagination]
+  kconfig: [DRM_POWERVR]
+  firmware: [powervr/rogue_*.fw]
+  patches: .
+  userspace: 'Mesa pvr (Vulkan), GLES only via Zink; vendor stack: TI IMG DDK'
+  notes: driver state says nothing about GLES/Vulkan conformance - keep the graphics section of the report
+
+vpu:
+  name: 'Video codec: Wave521C (H.264/H.265)'
+  group: Multimedia
+  short: Video codec
+  socs: [am62ax, am62px, am67x]
+  nodes: [vpu*]
+  tisci: [CODEC0]
+  drivers: [drivers/media/platform/chips-media/wave5]
+  kconfig: [VIDEO_WAVE_VPU]
+  firmware: [cnm/wave521c_k3_codec_fw.bin]
+  patches: .
+  userspace: 'V4L2 M2M: GStreamer v4l2codecs, ffmpeg'
+
+jpeg:
+  name: 'JPEG encoder: E5010'
+  group: Multimedia
+  short: JPEG encoder
+  socs: [am62ax, am67x]
+  nodes: [e5010]
+  tisci: [JPGENC0]
+  drivers: [drivers/media/platform/imagination/e5010-jpeg-enc.c]
+  kconfig: [VIDEO_E5010_JPEG_ENC]
+  patches: .
+  userspace: V4L2 M2M
+
+csi2rx:
+  name: 'Camera: CSI-2 RX'
+  group: Multimedia
+  short: CSI-2 RX
+  socs: [am62x, am62ax, am62px, am67x]
+  nodes: [ti_csi2rx*, cdns_csi2rx*, dmss_csi, main_bcdma_csi, inta_main_dmss_csi]
+  tisci: [CSI_RX_IF*]
+  drivers: [drivers/media/platform/ti/j721e-csi2rx, drivers/media/platform/cadence/cdns-csi2rx.c]
+  kconfig: [VIDEO_TI_J721E_CSI2RX, VIDEO_CADENCE_CSI2RX]
+  patches: .
+  userspace: V4L2, libcamera; sensor drivers are board scope (AR0144 for VM-016 is vendor-only)
+  notes: 'AM67x: four CSI-2 RX instances'
+
+vpac:
+  name: 'Vision: VPAC ISP'
+  group: Multimedia
+  short: VPAC ISP
+  socs: [am62ax, am67x]
+  tisci: [VPAC0]
+  userspace: TI Edge AI SDK (TIOVX on the C7x)
+  notes: no Linux driver on either side; TI drives the ISP from the C7x firmware
+
+c7x:
+  name: 'DSP: C7x remoteproc'
+  group: Compute & IPC
+  short: C7x DSP
+  socs: [am62ax, am67x]
+  nodes: [c7x_*]
+  tisci: ['C7X256V*_C7XV_CORE_*']
+  drivers: [drivers/remoteproc/ti_k3_dsp_remoteproc.c]
+  kconfig: [TI_K3_DSP_REMOTEPROC]
+  firmware: ['ti-ipc/{fw}/*c7x*']
+  patches: .
+  userspace: remoteproc sysfs, rpmsg; Edge AI firmware from the TI SDK
+
+m4f:
+  name: MCU M4F remoteproc
+  group: Compute & IPC
+  short: M4F
+  socs: [am62x, am64x]
+  nodes: [mcu_m4fss*]
+  tisci: [MCU_M4FSS0*]
+  drivers: [drivers/remoteproc/ti_k3_m4_remoteproc.c]
+  kconfig: [TI_K3_M4_REMOTEPROC]
+  firmware: ['ti-ipc/{fw}/*m4f*']
+  patches: .
+  userspace: remoteproc sysfs, rpmsg
+
+r5f:
+  name: R5F remoteproc (MCU / main cores)
+  group: Compute & IPC
+  short: R5F
+  socs: [am62ax, am62px, am67x, am64x]
+  nodes: [mcu_r5fss*, main_r5fss*]
+  tisci: [MCU_R5FSS*, R5FSS*]
+  drivers: [drivers/remoteproc/ti_k3_r5_remoteproc.c]
+  kconfig: [TI_K3_R5_REMOTEPROC]
+  firmware: ['ti-ipc/{fw}/*r5f*', 'ti-ipc/{fw}/*mcu*']
+  patches: .
+  userspace: remoteproc sysfs, rpmsg
+
+dm:
+  name: 'Device manager: wakeup R5F (DM firmware)'
+  group: Compute & IPC
+  short: DM R5F
+  socs: [am62x, am62ax, am62px, am67x]
+  nodes: [wkup_r5fss*]
+  tisci: [WKUP_R5FSS0*]
+  drivers: [drivers/remoteproc/ti_k3_r5_remoteproc.c]
+  kconfig: [TI_K3_R5_REMOTEPROC]
+  firmware: ['ti-dm/{fw}/*']
+  notes: the DM firmware is loaded by U-Boot; Linux needs the node for IPC and low power
+
+ipc:
+  name: 'IPC: mailboxes, rpmsg, hwspinlock'
+  group: Compute & IPC
+  short: IPC
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [mailbox0_cluster*, hwspinlock, secure_proxy_*]
+  tisci: [MAILBOX0, SPINLOCK0]
+  drivers: [drivers/mailbox/omap-mailbox.c, drivers/mailbox/ti-msgmgr.c, drivers/hwspinlock/omap_hwspinlock.c, drivers/rpmsg/virtio_rpmsg_bus.c, drivers/rpmsg/rpmsg_char.c]
+  kconfig: [OMAP2PLUS_MBOX, TI_MESSAGE_MANAGER, HWSPINLOCK_OMAP, RPMSG_VIRTIO, RPMSG_CHAR, RPMSG_CTRL]
+  firmware: ['ti-ipc/{fw}/*']
+  patches: .
+  userspace: ti-rpmsg-char, rpmsg_char_simple
+
+pru:
+  name: 'PRU-ICSS (ICSSM): cores, INTC, UART'
+  group: Compute & IPC
+  short: PRU-ICSSM
+  socs: [am62x]
+  nodes: [pruss*, pru0, pru1]
+  tisci: [ICSSM0]
+  drivers: [drivers/soc/ti/pruss.c, drivers/remoteproc/pru_rproc.c, drivers/irqchip/irq-pruss-intc.c, drivers/tty/serial/8250/8250_pruss.c]
+  kconfig: [TI_PRUSS, PRU_REMOTEPROC, TI_PRUSS_INTC, SERIAL_8250_PRUSS]
+  patches: .
+  userspace: remoteproc sysfs, rpmsg-pru; the PRU firmware is application specific
+  notes: no ICSSM Ethernet nodes for AM62x in the TI kernel either
+
+icssg:
+  name: 'PRU-ICSSG: cores, Ethernet (prueth), IEP/PTP'
+  group: Compute & IPC
+  short: PRU-ICSSG
+  socs: [am64x]
+  nodes: [icssg*, 'pru?_?', 'rtu?_?', 'tx_pru?_?']
+  tisci: [PRU_ICSSG*]
+  drivers: [drivers/soc/ti/pruss.c, drivers/remoteproc/pru_rproc.c, drivers/irqchip/irq-pruss-intc.c, drivers/net/ethernet/ti/icssg, drivers/tty/serial/8250/8250_pruss.c]
+  kconfig: [TI_PRUSS, PRU_REMOTEPROC, TI_PRUSS_INTC, TI_ICSSG_PRUETH, SERIAL_8250_PRUSS]
+  firmware: [ti-pruss/am64x-sr2-*-prueth-fw.elf, ti-pruss/am64x-sr2-*-prusw-fw.elf]
+  patches: .
+  userspace: ethtool, linuxptp; HSR/PRP firmware (pruhsr/pruprp) and icssg_qos are vendor-only
+
+cpsw:
+  name: 'Ethernet: CPSW3G, CPTS/PTP'
+  group: Connectivity
+  short: CPSW Ethernet
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [cpsw3g*, cpsw_port*, cpsw_mac_syscon, main_cpts0, phy_gmii_sel]
+  tisci: [CPSW0, CPTS0]
+  drivers: [drivers/net/ethernet/ti/am65-cpsw-nuss.c, drivers/net/ethernet/ti/am65-cpts.c, drivers/phy/ti/phy-gmii-sel.c]
+  kconfig: [TI_K3_AM65_CPSW_NUSS, TI_K3_AM65_CPTS, PHY_TI_GMII_SEL]
+  patches: .
+  paths: [drivers/net/ethernet/ti/am65-*, drivers/net/ethernet/ti/cpsw-proxy-client.c, drivers/phy/ti/phy-gmii-sel.c]
+  userspace: linuxptp; XDP (am65-cpsw-xdp.c) and the CPSW proxy client are vendor-only
+
+pcie:
+  name: PCIe + SERDES
+  group: Connectivity
+  short: PCIe
+  socs: [am64x, am67x]
+  nodes: [pcie0*, serdes*]
+  tisci: [PCIE0, SERDES_10G*]
+  drivers: [drivers/pci/controller/cadence/pci-j721e.c, drivers/phy/ti/phy-j721e-wiz.c, drivers/phy/cadence/phy-cadence-torrent.c]
+  kconfig: [PCI_J721E_HOST, PHY_J721E_WIZ, PHY_CADENCE_TORRENT]
+  patches: .
+
+usb_dwc3:
+  name: 'USB 2.0: DWC3'
+  group: Connectivity
+  short: USB 2.0 DWC3
+  socs: [am62x, am62ax, am62px, am67x]
+  nodes: [usbss*, usb0, usb1, 'usb?_phy_ctrl']
+  tisci: [USB0, USB1, USBSS*]
+  drivers: [drivers/usb/dwc3/dwc3-am62.c]
+  kconfig: [USB_DWC3_AM62]
+  patches: .
+
+usb_cdns3:
+  name: 'USB 3.0: CDNS3 + SERDES'
+  group: Connectivity
+  short: USB 3.0 CDNS3
+  socs: [am64x]
+  nodes: [usbss*, usb0, serdes*]
+  tisci: [USB0]
+  drivers: [drivers/usb/cdns3/cdns3-ti.c]
+  kconfig: [USB_CDNS3_TI]
+  patches: .
+
+mmc:
+  name: 'Storage: SD / eMMC (SDHCI)'
+  group: Storage
+  short: SD / eMMC
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [sdhci*]
+  tisci: [MMCSD*]
+  drivers: [drivers/mmc/host/sdhci_am654.c]
+  kconfig: [MMC_SDHCI_AM654]
+  patches: .
+
+ospi:
+  name: 'Storage: OSPI / QSPI NOR (FSS)'
+  group: Storage
+  short: OSPI NOR
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [ospi0, fss, fsas0]
+  tisci: [FSS0*]
+  drivers: [drivers/spi/spi-cadence-quadspi.c, drivers/memory/ti-k3-fsas.c]
+  kconfig: [SPI_CADENCE_QUADSPI, MTD_SPI_NOR, TI_K3_FSS_FSAS]
+  patches: .
+  notes: ti-k3-fsas (FSAS error handling) is TI-only
+
+gpmc:
+  name: 'Storage: GPMC NAND + ELM'
+  group: Storage
+  short: GPMC NAND
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [gpmc0, elm0]
+  tisci: [GPMC0, ELM0]
+  drivers: [drivers/memory/omap-gpmc.c, drivers/mtd/nand/raw/omap2.c, drivers/mtd/nand/raw/omap_elm.c]
+  kconfig: [OMAP_GPMC, MTD_NAND_OMAP2, MTD_NAND_OMAP_BCH]
+  patches: .
+  notes: 'AM62Ax/AM62Px/AM67x: TISCI knows GPMC0/ELM0 but neither kernel has a node'
+
+crypto:
+  name: 'Security: SA3UL/SA2UL crypto, RNG, OP-TEE'
+  group: System
+  short: Crypto / RNG
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [crypto, rng, optee]
+  tisci: [SA3_SS0, SA2_UL0]
+  drivers: [drivers/crypto/sa2ul.c, drivers/char/hw_random/omap-rng.c, drivers/tee/optee]
+  kconfig: [CRYPTO_DEV_SA2UL, HW_RANDOM_OMAP, OPTEE]
+  patches: .
+  userspace: optee-client; HS-FS/HS-SE boot is bootloader scope (ti-sysfw)
+
+mcrc64:
+  name: 'MCRC64: 64-bit CRC engine'
+  group: System
+  short: MCRC64
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [crc, mcrc64*]
+  tisci: [MCRC64_0, MCU_MCRC64_0]
+  drivers: [drivers/crypto/ti/mcrc64.c]
+  kconfig: [CRYPTO_DEV_TI_MCRC64]
+  patches: mcrc
+  paths: [drivers/crypto/ti, '{dts}']
+  userspace: AF_ALG (algif_hash) crc64-iso3309; TI's mcrc64 test app in meta-arago
+  notes: 'TI SDK docs still list the driver; it exists only in ti-linux-6.6.y/6.12.y (node crc@30300000, ti,am62-mcrc64), dropped from 6.18; upstream v3 30.05.2024 rejected (no in-kernel user for crc64-iso3309)'
+
+can:
+  name: 'CAN: MCAN'
+  group: Connectivity
+  short: MCAN
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: ['*mcan*']
+  tisci: [MCAN*, MCU_MCAN*]
+  drivers: [drivers/net/can/m_can/m_can_platform.c]
+  kconfig: [CAN_M_CAN_PLATFORM]
+  patches: .
+
+audio:
+  name: 'Audio: McASP'
+  group: Multimedia
+  short: McASP audio
+  socs: [am62x, am62ax, am62px, am67x]
+  nodes: [mcasp*]
+  tisci: [MCASP*]
+  drivers: [sound/soc/ti/davinci-mcasp.c]
+  kconfig: [SND_SOC_DAVINCI_MCASP]
+  patches: .
+  userspace: codec drivers are board scope (TLV320AIC3007 mainline, TAC5x1x vendor-only)
+
+pwm:
+  name: PWM / eCAP / eQEP
+  group: System
+  short: PWM / eCAP / eQEP
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [epwm*, ecap*, eqep*]
+  tisci: [EPWM*, ECAP*, EQEP*]
+  drivers: [drivers/pwm/pwm-tiehrpwm.c, drivers/pwm/pwm-tiecap.c, drivers/counter/ti-eqep.c]
+  kconfig: [PWM_TIEHRPWM, PWM_TIECAP, TI_EQEP]
+  patches: .
+
+adc:
+  name: 'ADC: TSCADC'
+  group: System
+  short: ADC
+  socs: [am64x]
+  nodes: [tscadc0]
+  tisci: [ADC0]
+  drivers: [drivers/mfd/ti_am335x_tscadc.c, drivers/iio/adc/ti_am335x_adc.c]
+  kconfig: [MFD_TI_AM335X_TSCADC, TI_AM335X_ADC]
+  patches: .
+
+fsi:
+  name: 'FSI: Fast Serial Interface (6 RX, 2 TX)'
+  group: Connectivity
+  short: FSI
+  socs: [am64x]
+  tisci: [FSIRX*, FSITX*]
+  userspace: 'TI MCU+ SDK (R5F / PRU firmware)'
+  notes: no Linux driver on either side; TI drives the FSI links from the R5F cores (MCU+ SDK)
+
+watchdog:
+  name: 'Watchdog: RTI'
+  group: System
+  short: Watchdog
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: ['*_rti*']
+  tisci: [RTI*, MCU_RTI*, WKUP_RTI*]
+  drivers: [drivers/watchdog/rti_wdt.c]
+  kconfig: [K3_RTI_WATCHDOG]
+  patches: .
+
+rtc:
+  name: RTC (wakeup domain)
+  group: Power
+  short: RTC
+  socs: [am62x, am62ax, am62px, am67x]
+  nodes: [wkup_rtc0]
+  tisci: [WKUP_RTCSS0]
+  drivers: [drivers/rtc/rtc-ti-k3.c]
+  kconfig: [RTC_DRV_TI_K3]
+  patches: .
+  notes: most downstream RTC patches are low-power wakeup work
+
+thermal:
+  name: Thermal (VTM) and cpufreq
+  group: Power
+  short: Thermal / cpufreq
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: ['*vtm*', '*opp*']
+  drivers: [drivers/thermal/k3_bandgap.c, drivers/cpufreq/ti-cpufreq.c]
+  kconfig: [K3_THERMAL, ARM_TI_CPUFREQ]
+  patches: .
+  notes: AM64x has no OPP table (fixed frequency)
+
+ddrss:
+  name: 'DDR subsystem: temperature monitoring, refresh derating, PMU'
+  group: System
+  short: DDR subsystem
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [memorycontroller, ddrss*, ddr]
+  tisci: [DDR16SS0, DDR32SS0]
+  drivers: [drivers/memory/k3-ddr.c, drivers/memory/ti-ddrss-mr4.c, drivers/mfd/ti-ddrss-core.c, drivers/perf/ti_k3_ddr_perf.c]
+  kconfig: [TI_K3_DDR, K3_DDR_TEMP, MFD_TI_DDRSS]
+  patches: ddrss|k3-ddr|k3_ddr|ddr.*temp
+  paths: [drivers/memory, drivers/mfd, drivers/perf, '{dts}']
+  userspace: hwmon sysfs (refresh_status), perf stat k3_ddr events
+  notes: 'TI SDK docs claim DDR temperature monitoring; the k3-ddr driver and the ti,am62a-ddrss node exist only in ti-linux-6.12.y, dropped from 6.18; upstream RFC 14.07.2026 (MFD + MR4 refresh + PMU, AM62P node) NAKed on the bindings'
+
+dma:
+  name: 'DMA: BCDMA / PKTDMA, PSI-L'
+  group: System
+  short: DMA
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [main_bcdma*, main_pktdma*, dmss*, inta_main_dmss*]
+  tisci: [DMASS0_BCDMA_0, DMASS0_PKTDMA_0]
+  drivers: [drivers/dma/ti/k3-udma.c, drivers/dma/ti/k3-udma-glue.c, drivers/soc/ti/k3-ringacc.c]
+  kconfig: [TI_K3_UDMA, TI_K3_UDMA_GLUE_LAYER, TI_K3_RINGACC]
+  patches: .
+  paths: [drivers/dma/ti, drivers/soc/ti/k3-ringacc.c]
+  notes: k3-udma-v2 (AM62L) is TI-only
+
+sysfw:
+  name: 'TI-SCI: system firmware interface, PM domains, clocks, IRQ routers'
+  group: System
+  short: TI-SCI
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [dmsc, k3_pds, k3_clks, k3_reset, '*gpio_intr', inta_main_dmss]
+  drivers: [drivers/firmware/ti_sci.c, drivers/pmdomain/ti/ti_sci_pm_domains.c, drivers/clk/keystone/sci-clk.c, drivers/reset/reset-ti-sci.c, drivers/irqchip/irq-ti-sci-inta.c, drivers/irqchip/irq-ti-sci-intr.c]
+  kconfig: [TI_SCI_PROTOCOL, TI_SCI_PM_DOMAINS, TI_SCI_CLK, RESET_TI_SCI, TI_SCI_INTA_IRQCHIP, TI_SCI_INTR_IRQCHIP]
+  patches: .
+
+gpio:
+  name: GPIO and pinctrl (incl. padconf wakeup IRQs)
+  group: System
+  short: GPIO / pinctrl
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: ['*gpio?', '*pmx?']
+  tisci: [GPIO*, MCU_GPIO*, WKUP_GPIO*]
+  drivers: [drivers/gpio/gpio-davinci.c, drivers/pinctrl/pinctrl-single.c]
+  kconfig: [GPIO_DAVINCI, PINCTRL_SINGLE]
+  patches: .
+  notes: the TI padconf wakeup-interrupt extension (ti,am654-padconf + interrupt-controller) is TI-only
+
+timesync:
+  name: Timesync event router
+  group: System
+  short: Timesync router
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: [timesync_router]
+  tisci: [TIMESYNC_EVENT_ROUTER0, TIMESYNC_INTRTR0]   # AM62Px/AM64x/J722S: TIMESYNC_EVENT_INTROUTER0; the node carries no TISCI id, listing it would flag a false gap
+  drivers: [drivers/mux/mmio.c, drivers/mux/ti-k3-event-mux.c]
+  kconfig: [MUX_MMIO, MUX_TI_K3_EVENT_ROUTER]
+  notes: mainline AM64x describes it as pinctrl-single; TI's ti,am62l-event-mux-router driver is TI-only
+
+lpm:
+  name: 'Low power: Deep Sleep, MCU-only, Standby, Partial-IO'
+  group: Power
+  short: Low power
+  socs: [am62x, am62ax, am62px, am67x]
+  nodes: [system_*, wkup_r5fss0, wkup_rtc0]
+  tisci: [WKUP_DEEPSLEEP_SOURCES0]
+  drivers: [drivers/firmware/ti_sci.c, drivers/pmdomain/ti/ti_sci_pm_domains.c, drivers/cpuidle/cpuidle-psci.c, drivers/rtc/rtc-ti-k3.c, drivers/soc/ti/k3-wkup-src-notify.c]
+  kconfig: [SUSPEND, CPU_IDLE, ARM_PSCI_CPUIDLE, TI_K3_WKUP_SRC_NOTIFY]
+  firmware: ['ti-dm/{fw}/*']
+  patches: lpm|low.?power|deep.?sleep|suspend|resume|wakeup|wake-?up|partial.?io|mcu.?only|standby|daisy|io.?isolation|lpsc
+  paths: [drivers, sound, include, '{dts}']
+  userspace: 'rtcwake, systemd suspend; wake sources per board (a board overlay with a padconf wakeup GPIO key)'
+  notes: 'the modes themselves live in TF-A and the DM firmware; the kernel side is the per-driver suspend/resume stack - read the patch list, not the DT. AM67x and AM64x: no idle states in the TI kernel'
+
+wifi:
+  name: 'WiFi/Bluetooth: CC33xx (M.2 CC3351 module)'
+  group: Connectivity
+  short: CC33xx WiFi/BT
+  socs: [am62x, am62ax, am62px, am67x]
+  drivers: [drivers/net/wireless/ti/cc33xx, drivers/bluetooth/btti_main.c]
+  kconfig: [CC33XX, BT_TI]
+  firmware: [ti-connectivity/cc33xx_*.bin]
+  patches: cc33|btti
+  paths: [drivers/net/wireless/ti, drivers/bluetooth]
+  notes: module on the carrier board, tracked at SoC scope in the report; TI out-of-tree driver with a series on lore
+
+heaps:
+  name: DMA-BUF carveout and SRAM heaps (Edge AI, display sharing)
+  group: System
+  short: DMA-BUF heaps
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  drivers: [drivers/dma-buf/heaps/carveout-heap.c, drivers/misc/sram-dma-heap.c]
+  kconfig: [DMABUF_HEAPS_CARVEOUT, SRAM_DMA_HEAP]
+  notes: TI-only
+
+esm:
+  name: 'Safety: ESM error signaling'
+  group: System
+  short: ESM
+  socs: [am62x, am62ax, am62px, am67x, am64x]
+  nodes: ['*esm*']
+  tisci: [ESM0, MCU_ESM0, WKUP_ESM0]
+  notes: nodes on both sides, no driver on either side (firmware / safety MCU territory)

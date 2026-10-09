@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}K3 upstream status{% endblock %}</title>
+<meta name="description" content="{% block description %}Mainline Linux support of the TI K3 SoCs, feature by feature.{% endblock %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="{{ root }}assets/style.css">
+<script>try{var t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="{{ root }}index.html"><span class="eyebrow">TI K3</span><strong>Upstream status</strong></a>
+  <nav>
+    <a href="{{ root }}index.html#features">Features</a>
+    <a href="{{ root }}index.html#components">Components</a>
+    <a href="{{ root }}index.html#patches">Patches</a>
+    <a href="{{ root }}index.html#sources">Sources</a>
+    <button id="theme" type="button" title="Switch light / dark" aria-label="Switch light or dark theme"><span></span></button>
+  </nav>
+</header>
+<main>
+{% block main %}{% endblock %}
+</main>
+<footer>
+  <p class="build">
+    <span>Generated {{ generated }}</span>
+    {% if sources.kernel.tag %}<span>TI SDK {{ sources.kernel.tag }}</span>{% endif %}
+    {% if mainline %}<span>Mainline {{ mainline }}{% if snapshot %} ({{ snapshot }}){% endif %}</span>{% endif %}
+    {% if repo_url %}<a href="{{ repo_url }}">Source</a>{% endif %}
+  </p>
+  <p class="llm">Generated with an LLM and only spot-checked: may contain wrong information, no responsibility is taken for it. <a href="{{ root }}index.html#sources">Sources</a></p>
+</footer>
+<div id="tip" class="tip" role="tooltip" hidden></div>
+<script src="{{ root }}assets/app.js"></script>
+</body>
+</html>

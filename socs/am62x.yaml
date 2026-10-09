@@ -1,0 +1,2760 @@
+soc: am62x
+name: AM62x
+detail: TI K3, AM625
+run: '2026-10-09'
+down:
+  ref: ti/ti-linux-6.18.y
+  tag: 12.02.00.01
+  tip: '2026-10-08'
+  base: v6.18.51
+  sdk: '12.01'
+  commits: 937
+up:
+  ref: origin/master
+  version: v7.3-rc6-232-gaf32da41b0327
+  date: '2026-10-09'
+board: k3-am625-sk.dts
+dtsi: k3-am625.dtsi
+includes: k3-am62.dtsi, k3-am62-main/-mcu/-wakeup/-thermal.dtsi
+config:
+- arch/arm64/configs/defconfig
+- kernel/configs/ti_arm64_prune.config
+facts:
+  TISCI: https://software-dl.ti.com/tisci/esd/latest/5_soc_doc/am62x/devices.html (150 devices, 90 with a node by id)
+  TI SDK upstream status: https://software-dl.ti.com/processor-sdk-linux/esd/AM62X/latest/exports/docs/linux/Foundational_Components/Power_Management/pm_upstream.html (12.01.00.05, page last changed 2026-07-28);
+    the only such page in the AM62X docs
+  TI SDK docs: 'processor-sdk-doc 12.01.00.05.03 (clone 2026-10-06): 31 kernel-driver pages in the AM62X TOC, all mapped to a row; MCRC64 (page 30.11.2024) and K3 DDR (09.12.2025) describe drivers that
+    exist only in ti-linux-6.12.y'
+components:
+- name: mcu_pmx
+  instances: 1
+  driver: pinctrl/pinctrl-single.c +1
+  kconfig: PINCTRL_SINGLE=y
+  state: mainline
+  not_upstream: 1
+  patches:
+  - acdd68d56ed86
+  - b37791f30871f
+  - 714c09594ecee
+- name: mcu_esm
+  instances: 1
+  driver: '-'
+  kconfig: '-'
+  state: no-driver
+  notes: no ESM driver on either side
+- name: mcu_timer
+  family: MCU_TIMER
+  instances: 4
+  driver: clocksource/timer-ti-dm.c
+  kconfig: OMAP_DM_TIMER=-
+  state: mainline
+  not_upstream: 0
+  patches:
+  - b7c8155312ae4
+  - d694905124722
+- name: mcu_uart
+  family: MCU_UART
+  instances: 1
+  driver: tty/serial/8250/8250_early.c +1
+  kconfig: SERIAL_8250_CONSOLE=y SERIAL_8250_OMAP=y
+  state: mainline
+  not_upstream: 0
+  patches:
+  - e9676c58b7e7f
+- name: mcu_i2c
+  family: MCU_I2C
+  instances: 1
+  driver: i2c/busses/i2c-omap.c
+  kconfig: I2C_OMAP=y
+  state: mainline
+- name: mcu_spi
+  family: MCU_MCSPI
+  instances: 2
+  driver: spi/spi-omap2-mcspi.c
+  kconfig: SPI_OMAP24XX=m
+  state: mainline
+  not_upstream: 2
+  patches:
+  - 618141ce5bee3
+  - '7337682258523'
+- name: mcu_gpio_intr
+  family: WKUP_MCU_GPIOMUX_INTROUTER
+  instances: 1
+  driver: irqchip/irq-ti-sci-intr.c
+  kconfig: TI_SCI_INTR_IRQCHIP=y
+  state: mainline
+  not_upstream: 0
+  patches:
+  - c4353db494679
+  - cb43feec76010
+- name: mcu_gpio
+  family: MCU_GPIO
+  instances: 1
+  driver: gpio/gpio-davinci.c
+  kconfig: GPIO_DAVINCI=y
+  state: mainline
+  not_upstream: 1
+  patches:
+  - 71d7b2dba4c8c
+- name: mcu_rti
+  family: MCU_RTI
+  instances: 1
+  driver: watchdog/rti_wdt.c
+  kconfig: K3_RTI_WATCHDOG=m
+  state: mainline
+  not_upstream: 0
+  patches:
+  - d992b4b35c93b
+  - fbeefbdddd764
+- name: mcu_mcan
+  family: MCU_MCAN
+  instances: 2
+  driver: net/can/m_can/m_can_platform.c
+  kconfig: CAN_M_CAN_PLATFORM=m
+  state: mainline
+  not_upstream: 0
+  patches:
+  - 451155af3f836
+  - 1151b38810628
+- name: mcu_m4fss
+  family: MCU_M4FSS0_CORE
+  instances: 1
+  driver: remoteproc/ti_k3_m4_remoteproc.c
+  kconfig: TI_K3_M4_REMOTEPROC=m
+  state: mainline
+  not_upstream: 6
+  notes: power-domains property for M4FSS posted 22.09.2026, under review by Andrew Davis (07.10.2026, https://lore.kernel.org/all/20260922171942.201947-1-sid9.karanam@gmail.com/); firmware am62-mcu-m4f0_0-fw
+    in ti-linux-firmware
+  patches:
+  - bdbdb414e41af
+  - 9030b8eb049f4
+  - 2a11f909d4855
+  - 4fc7b1abe4384
+  - 6d8147977b2d9
+  - 6700f98635bba
+- name: chipid
+  instances: 1
+  driver: soc/ti/k3-socinfo.c
+  kconfig: TI_K3_SOCINFO=-
+  state: mainline
+  not_upstream: 1
+  patches:
+  - 8277a0fadf503
+  - abdf4e7f1d6d2
+  - 0b10bd35883bd
+- name: opp_efuse_table
+  instances: 1
+  driver: generic (syscon)
+  kconfig: '-'
+  state: mainline
+- name: cpsw_mac_syscon
+  instances: 1
+  driver: generic (syscon)
+  kconfig: '-'
+  state: mainline
+- name: usb_phy_ctrl
+  instances: 2
+  driver: generic (syscon)
+  kconfig: '-'
+  state: mainline
+- name: target-module
+  family: WKUP_UART
+  instances: 1
+  driver: bus/ti-sysc.c
+  kconfig: TI_SYSC=-
+  state: mainline
+  not_upstream: 0
+  patches:
+  - 1f43c12542a94
+- name: wkup_uart
+  instances: 1
+  driver: tty/serial/8250/8250_early.c +1
+  kconfig: SERIAL_8250_CONSOLE=y SERIAL_8250_OMAP=y
+  state: mainline
+  not_upstream: 0
+  patches:
+  - e9676c58b7e7f
+- name: wkup_i2c
+  family: WKUP_I2C
+  instances: 1
+  driver: i2c/busses/i2c-omap.c
+  kconfig: I2C_OMAP=y
+  state: mainline
+- name: wkup_rtc
+  family: WKUP_RTCSS
+  instances: 1
+  driver: rtc/rtc-ti-k3.c
+  kconfig: RTC_DRV_TI_K3=m
+  state: mainline
+  not_upstream: 16
+  patches:
+  - 86b705ce40062
+  - 3f6e01139af12
+  - 7dd1b788a8a65
+  - 23ed49769db03
+  - 0aba9fcaca1ca
+  - 0eb0451d07139
+  - 14da7d7aa119b
+  - 6f2141104dc2f
+  - 9456264c4c457
+  - c407753c97176
+  - 4de838a50db97
+  - 99ceead0c0d16
+  - bdc2913602d5e
+  - 6e0fee03dc073
+  - 9d05c67e0b2fc
+  - 9124971c9e0af
+  - 63dc62d7c0193
+- name: wkup_rti
+  family: WKUP_RTI
+  instances: 1
+  driver: watchdog/rti_wdt.c
+  kconfig: K3_RTI_WATCHDOG=m
+  state: mainline
+  not_upstream: 0
+  patches:
+  - d992b4b35c93b
+  - fbeefbdddd764
+- name: wkup_r5fss
+  family: WKUP_R5FSS
+  instances: 1
+  driver: remoteproc/ti_k3_r5_remoteproc.c
+  kconfig: TI_K3_R5_REMOTEPROC=m
+  state: mainline
+  not_upstream: 9
+  patches:
+  - bdbdb414e41af
+  - f844e0f42b60c
+  - 03e4d116a4eb3
+  - 9030b8eb049f4
+  - 8f753312db559
+  - 130f5595a99b2
+  - 597d1b29972ff
+  - 3fd38d73b987d
+  - 6700f98635bba
+- name: wkup_r5fss_core
+  family: WKUP_R5FSS0_CORE
+  instances: 1
+  driver: '-'
+  kconfig: '-'
+  state: parent
+- name: wkup_vtm
+  family: WKUP_VTM
+  instances: 1
+  driver: thermal/k3_j72xx_bandgap.c
+  kconfig: K3_THERMAL=m
+  state: mainline
+  not_upstream: 1
+  patches:
+  - d16c3d40dedfb
+- name: phy_gmii_sel
+  instances: 1
+  driver: phy/ti/phy-gmii-sel.c
+  kconfig: PHY_TI_GMII_SEL=-
+  state: mainline
+- name: epwm_tbclk
+  instances: 1
+  driver: clk/keystone/syscon-clk.c
+  kconfig: TI_SYSCON_CLK=-
+  state: mainline
+- name: audio_refclk
+  family: BOARD
+  instances: 2
+  driver: clk/keystone/syscon-clk.c
+  kconfig: TI_SYSCON_CLK=-
+  state: mainline
+- name: dss_oldi_io_ctrl
+  instances: 1
+  driver: generic (syscon)
+  kconfig: '-'
+  state: mainline
+  not_upstream: 0
+  notes: Tomi Valkeinen's Control Module syscon series (28.05.2026, open) renames the node to dss-oldi-io-ctrl; cosmetics
+  patches:
+  - 5b2e3b73c8c2d
+- name: dss_clk_ctrl
+  instances: 1
+  driver: generic (syscon)
+  kconfig: '-'
+  state: node-missing
+  not_upstream: 1
+  notes: TI SDK OLDI clock glue (tidss selects the DSS clock through this syscon); mainline describes the OLDI clock as the fixed-factor divider dss_vp1_clk in k3-am62.dtsi and the OLDI bridge (tidss, v6.17)
+    needs no syscon - not an item
+  patches:
+  - 9c9f3777c4c73
+- name: secure_proxy_main
+  instances: 1
+  driver: mailbox/ti-msgmgr.c
+  kconfig: TI_MESSAGE_MANAGER=-
+  state: mainline
+- name: inta_main_dmss
+  family: DMASS0_INTAGGR
+  instances: 1
+  driver: irqchip/irq-ti-sci-inta.c
+  kconfig: TI_SCI_INTA_IRQCHIP=y
+  state: mainline
+  not_upstream: 2
+  patches:
+  - 1697a54f23e31
+  - 79a3ceb875afd
+- name: main_bcdma
+  family: DMASS0_BCDMA
+  instances: 1
+  driver: dma/ti/k3-udma.c
+  kconfig: TI_K3_UDMA=y
+  state: mainline
+  not_upstream: 13
+  patches:
+  - 06d077d8a0e9d
+  - 9600a3402af42
+  - cd42079315d19
+  - 7bd5bb7d3048c
+  - 76a197340651c
+  - 41a7ae789dbd8
+  - deb839b5c622a
+  - 851b761497045
+  - 3393d94576cb8
+  - 18245a593750e
+  - c792cbaecb155
+  - 212729f01aa09
+  - f5f216d05be32
+- name: main_pktdma
+  family: DMASS0_PKTDMA
+  instances: 1
+  driver: dma/ti/k3-udma.c
+  kconfig: TI_K3_UDMA=y
+  state: mainline
+  not_upstream: 13
+  patches:
+  - 06d077d8a0e9d
+  - 9600a3402af42
+  - cd42079315d19
+  - 7bd5bb7d3048c
+  - 76a197340651c
+  - 41a7ae789dbd8
+  - deb839b5c622a
+  - 851b761497045
+  - 3393d94576cb8
+  - 18245a593750e
+  - c792cbaecb155
+  - 212729f01aa09
+  - f5f216d05be32
+- name: dmsc
+  instances: 1
+  driver: firmware/ti_sci.c
+  kconfig: TI_SCI_PROTOCOL=-
+  state: mainline
+  not_upstream: 3
+  patches:
+  - 91a8013095384
+  - 9b32e0dcc35df
+  - e4f4d7c3196a9
+  - 65e319ea95dba
+  - 018de445a91db
+  - 71d7b2dba4c8c
+  - 52e9e3ebdb55a
+  - 70a774fd9cce0
+- name: k3_pds
+  instances: 1
+  driver: pmdomain/ti/ti_sci_pm_domains.c
+  kconfig: TI_SCI_PM_DOMAINS=y
+  state: mainline
+  not_upstream: 1
+  patches:
+  - b9992fa271938
+  - 5c7ddeb8f2a41
+- name: k3_clks
+  instances: 1
+  driver: clk/keystone/sci-clk.c
+  kconfig: TI_SCI_CLK=y
+  state: mainline
+  not_upstream: 1
+  patches:
+  - d3df4beda5749
+  - 018de445a91db
+  - 7b48f20e3f162
+- name: k3_reset
+  instances: 1
+  driver: reset/reset-ti-sci.c
+  kconfig: RESET_TI_SCI=y
+  state: mainline
+- name: crypto
+  instances: 1
+  driver: crypto/sa2ul.c
+  kconfig: CRYPTO_DEV_SA2UL=m
+  state: mainline
+  not_upstream: 0
+  patches:
+  - beb88173c1656
+- name: rng
+  instances: 1
+  driver: char/hw_random/omap-rng.c
+  kconfig: HW_RANDOM_OMAP=-
+  state: mainline
+  not_upstream: 0
+  patches:
+  - 4961ac44628c2
+- name: secure_proxy_sa
+  instances: 1
+  driver: mailbox/ti-msgmgr.c
+  kconfig: TI_MESSAGE_MANAGER=-
+  state: mainline
+  not_upstream: 1
+  patches:
+  - 61bc5b8b54400
+- name: main_pmx
+  instances: 1
+  driver: pinctrl/pinctrl-single.c +1
+  kconfig: PINCTRL_SINGLE=y
+  state: mainline
+  not_upstream: 1
+  patches:
+  - acdd68d56ed86
+  - b37791f30871f
+  - 714c09594ecee
+- name: main_esm
+  instances: 1
+  driver: '-'
+  kconfig: '-'
+  state: no-driver
+  notes: no ESM driver on either side
+- name: main_timer
+  family: TIMER
+  instances: 8
+  driver: clocksource/timer-ti-dm.c
+  kconfig: OMAP_DM_TIMER=-
+  state: mainline
+  not_upstream: 0
+  patches:
+  - b7c8155312ae4
+  - d694905124722
+- name: main_uart
+  family: UART
+  instances: 7
+  driver: tty/serial/8250/8250_early.c +1
+  kconfig: SERIAL_8250_CONSOLE=y SERIAL_8250_OMAP=y
+  state: mainline
+  not_upstream: 0
+  patches:
+  - e9676c58b7e7f
+- name: main_i2c
+  family: I2C
+  instances: 4
+  driver: i2c/busses/i2c-omap.c
+  kconfig: I2C_OMAP=y
+  state: mainline
+- name: main_spi
+  family: MCSPI
+  instances: 3
+  driver: spi/spi-omap2-mcspi.c
+  kconfig: SPI_OMAP24XX=m
+  state: mainline
+  not_upstream: 2
+  patches:
+  - 618141ce5bee3
+  - '7337682258523'
+- name: main_gpio_intr
+  family: MAIN_GPIOMUX_INTROUTER
+  instances: 1
+  driver: irqchip/irq-ti-sci-intr.c
+  kconfig: TI_SCI_INTR_IRQCHIP=y
+  state: mainline
+  not_upstream: 0
+  patches:
+  - c4353db494679
+  - cb43feec76010
+- name: main_gpio
+  family: GPIO
+  instances: 2
+  driver: gpio/gpio-davinci.c
+  kconfig: GPIO_DAVINCI=y
+  state: mainline
+  not_upstream: 1
+  patches:
+  - 71d7b2dba4c8c
+- name: sdhci
+  family: MMCSD
+  instances: 3
+  driver: mmc/host/sdhci_am654.c
+  kconfig: MMC_SDHCI_AM654=y
+  state: mainline
+  not_upstream: 7
+  patches:
+  - 64e9b92b3b977
+  - a82c9e552b062
+  - aa9f8489fd8ff
+  - e6ede70d8218e
+  - 6e8405bd916cb
+  - 51f501c951075
+  - 8d8ec126d33a6
+- name: usbss
+  family: MAIN_USB0_ISO_VD
+  instances: 2
+  driver: usb/dwc3/dwc3-am62.c
+  kconfig: USB_DWC3_AM62=-
+  state: mainline
+- name: usb
+  instances: 2
+  driver: usb/dwc3/core.c +6
+  kconfig: USB_DWC3=y
+  state: mainline
+- name: fsas
+  family: FSS0_FSAS
+  instances: 1
+  driver: memory/ti-k3-fsas.c (vendor)
+  kconfig: TI_K3_FSS_FSAS=y
+  state: vendor-only
+  not_upstream: 3
+  notes: 'memory: ti-k3-fsas v2 29.06.2026 open with review comments (Krzysztof Kozlowski, Rob Herring, until 08.07.2026), no v3, not in -next (https://lore.kernel.org/all/20260629072055.896322-1-s-k6@ti.com/)'
+  patches:
+  - f14cd3187b627
+  - 5e1e6753e4bec
+  - f7090ee8fe052
+- name: ospi
+  family: FSS0_OSPI
+  instances: 1
+  driver: spi/spi-cadence-quadspi.c
+  kconfig: SPI_CADENCE_QUADSPI=y
+  state: mainline
+  not_upstream: 10
+  patches:
+  - ff54e97206dd0
+  - 5ea86442c37b7
+  - d9403667c9bd2
+  - 7f84755d4851c
+  - 8d901ea94a423
+  - c8b66aee85dbd
+  - 31f9e54858111
+  - c206487ddac5c
+  - 2c5bc6ca165b1
+  - 7776e825a6703
+- name: gpu
+  family: GPU
+  instances: 1
+  driver: gpu/drm/imagination/pvr_drv.c
+  kconfig: DRM_POWERVR=m
+  state: mainline
+  not_upstream: 1
+  notes: 'AXE-1-16M: driver DRM_POWERVR since v6.8, node mainline, firmware rogue_33.15.11.3 in linux-firmware and ti-linux-firmware'
+  patches:
+  - b55e779737077
+  - cfdb373285c71
+- name: cpsw3g
+  family: CPSW
+  instances: 1
+  driver: net/ethernet/ti/am65-cpsw-nuss.c
+  kconfig: TI_K3_AM65_CPSW_NUSS=y
+  state: mainline
+  not_upstream: 18
+  patches:
+  - 77c46e96f0fc6
+  - efa2318f0503e
+  - 5cf8c52a0049c
+  - 515560de269fe
+  - a5f1139ee698c
+  - 8bc8c937d5158
+  - 280e1fb7e6885
+  - a1c24b26acc75
+  - 7a30596423eec
+  - e9ebc82517563
+  - 2364e31fc45c0
+  - a437b19f2ba2c
+  - df3e83610ee3d
+  - e26775829994a
+  - a13322b327ffa
+  - 1440337f63e80
+  - 388e2aafdb808
+  - 48f6254a24fc7
+  - cb243d074d4bf
+  - 087f4f7c4cbec
+  - ee9922bcc2015
+  - 0d4a4f60491db
+- name: cpsw3g_mdio
+  family: CPSW
+  instances: 1
+  driver: net/ethernet/ti/davinci_mdio.c
+  kconfig: TI_DAVINCI_MDIO=-
+  state: mainline
+- name: cpts
+  family: CPSW
+  instances: 1
+  driver: net/ethernet/ti/am65-cpts.c
+  kconfig: TI_K3_AM65_CPTS=y
+  state: mainline
+  not_upstream: 0
+  patches:
+  - 515560de269fe
+- name: dss
+  family: DSS
+  instances: 1
+  driver: gpu/drm/tidss/tidss_drv.c
+  kconfig: DRM_TIDSS=m
+  state: mainline
+  not_upstream: 10
+  notes: OLDI bridge in tidss since v6.17, oldi0/oldi1 nodes in mainline k3-am62-main.dtsi; OLDI panel overlays for AM625-SK (Microtips SK-LCD1) and BeaglePlay (LincolnTech LCD-185) in v7.3-rc1; TI's tidss
+    fixes are in the prep series v1 03.09.2026, see Display
+  patches:
+  - 5a4a441d0fd6e
+  - 4615c56b34aaf
+  - 9c9f3777c4c73
+  - 1b49e05cded08
+  - 2282caa22baa9
+  - 2b7c614738790
+  - c228d38dc9eb4
+  - f91a62b62aa2e
+  - 9c79055b56e80
+  - 798d68f47deab
+- name: timesync_router
+  instances: 1
+  driver: mux/ti-k3-event-mux.c (vendor)
+  kconfig: MUX_TI_K3_EVENT_ROUTER=m
+  state: vendor-only
+  not_upstream: 4
+  notes: event mux router v1 28.08.2026, binding discussion with Conor Dooley and Peter Rosin until 19.09.2026, no v2 (https://lore.kernel.org/all/20260828100615.1700223-1-r-sharma3@ti.com/); node disabled
+    on the SK
+  patches:
+  - cc7c8f4874ffb
+  - f637c8677ca41
+  - 72cc02f012502
+  - 909f13babdd96
+- name: hwspinlock
+  instances: 1
+  driver: hwspinlock/omap_hwspinlock.c
+  kconfig: HWSPINLOCK_OMAP=m
+  state: mainline
+- name: mailbox_cluster
+  instances: 1
+  driver: mailbox/omap-mailbox.c
+  kconfig: OMAP2PLUS_MBOX=m
+  state: mainline
+  not_upstream: 2
+  patches:
+  - e73de5a828cf2
+  - 597d1b29972ff
+- name: ecap
+  family: ECAP
+  instances: 3
+  driver: pwm/pwm-tiecap.c
+  kconfig: PWM_TIECAP=m
+  state: mainline
+- name: eqep
+  family: EQEP
+  instances: 3
+  driver: counter/ti-eqep.c
+  kconfig: TI_EQEP=m
+  state: mainline
+- name: main_mcan
+  family: MCAN
+  instances: 1
+  driver: net/can/m_can/m_can_platform.c
+  kconfig: CAN_M_CAN_PLATFORM=m
+  state: mainline
+  not_upstream: 0
+  patches:
+  - 451155af3f836
+  - 1151b38810628
+- name: main_rti
+  family: RTI
+  instances: 5
+  driver: watchdog/rti_wdt.c
+  kconfig: K3_RTI_WATCHDOG=m
+  state: mainline
+  not_upstream: 0
+  patches:
+  - d992b4b35c93b
+  - fbeefbdddd764
+- name: epwm
+  family: EPWM
+  instances: 3
+  driver: pwm/pwm-tiehrpwm.c
+  kconfig: PWM_TIEHRPWM=m
+  state: mainline
+  not_upstream: 0
+  patches:
+  - 25e529b290fc8
+- name: mcasp
+  family: MCASP
+  instances: 3
+  driver: sound/soc/ti/davinci-mcasp.c
+  kconfig: SND_SOC_DAVINCI_MCASP=m
+  state: mainline
+  not_upstream: 2
+  patches:
+  - 297065a221648
+  - 28671bc5b1e59
+  - 7d459df8e2329
+  - eb18986095e86
+  - 635120dd16bb4
+  - 9ecb33f78cea9
+  - 3f096e5722016
+  - dc40efb0d31ab
+  - b9d959915f019
+  - a94dcedd2ce88
+  - d48ed4887dfae
+- name: ti_csi2rx
+  family: CSI_RX_IF
+  instances: 1
+  driver: media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+  kconfig: VIDEO_TI_J721E_CSI2RX=m
+  state: mainline
+  not_upstream: 6
+  patches:
+  - b406bb58f3b8d
+  - 2c5c2c824d929
+  - ac5a859e888fe
+  - ca82460b4b983
+  - d1c2fd3834cef
+  - f5e747591c7a3
+  - f94926abd8b56
+  - 806e040085eaf
+  - d27bd88b9c39b
+  - ac1795b2d48c4
+  - 305b5bc214219
+  - 85662a7036de2
+  - 994b9cb7e27bc
+  - 7390045d5c25b
+  - 5eaaf89b3e369
+  - 22cdde5737b63
+  - b83d50eed74b5
+  - 991bd727ced8b
+  - 69a113ecbdc6d
+- name: cdns_csi2rx
+  family: CSI_RX_IF
+  instances: 1
+  driver: media/platform/cadence/cdns-csi2rx.c
+  kconfig: VIDEO_CADENCE_CSI2RX=m
+  state: mainline
+  not_upstream: 5
+  patches:
+  - 9cab355012338
+  - d6cfd780de35c
+  - 6221cc8cc2284
+  - ddd48e00fec91
+  - 014d1e0775dda
+  - 38420b1e8dcd5
+  - 79a5c6a2f01a1
+  - 3c6504c841100
+  - 69a113ecbdc6d
+- name: dphy
+  family: DPHY_RX
+  instances: 1
+  driver: phy/cadence/cdns-dphy-rx.c
+  kconfig: PHY_CADENCE_DPHY_RX=m
+  state: mainline
+- name: pruss
+  family: ICSSM
+  instances: 1
+  driver: soc/ti/pruss.c
+  kconfig: TI_PRUSS=m
+  state: mainline
+- name: pruss_cfg
+  instances: 1
+  driver: generic (syscon)
+  kconfig: '-'
+  state: mainline
+- name: pruss_intc
+  instances: 1
+  driver: irqchip/irq-pruss-intc.c
+  kconfig: TI_PRUSS_INTC=-
+  state: mainline
+  not_upstream: 3
+  patches:
+  - 52bd0c5a51594
+  - 43153fe972a74
+  - 6a1c08be7d1c8
+- name: pruss_uart
+  family: ICSSM
+  instances: 1
+  driver: tty/serial/8250/8250_pruss.c (vendor)
+  kconfig: SERIAL_8250_PRUSS=m
+  state: vendor-only
+  not_upstream: 3
+  notes: 'serial: 8250: PRUSS UART v1 13.05.2025 got review comments (Greg KH, Andy Shevchenko, Krzysztof Kozlowski), no v2 since (https://lore.kernel.org/all/20250513215934.933807-1-jm@ti.com/); node disabled
+    on the SK, TI builds SERIAL_8250_PRUSS=m'
+  patches:
+  - af0a762849b35
+  - f662557f24fb1
+  - 42cfc32a41894
+- name: pru
+  instances: 2
+  driver: remoteproc/pru_rproc.c
+  kconfig: PRU_REMOTEPROC=-
+  state: mainline
+  not_upstream: 3
+  patches:
+  - a11ada06bade0
+  - da8bf89e4df30
+  - 766c4634c1b79
+- name: gpmc
+  family: GPMC
+  instances: 1
+  driver: memory/omap-gpmc.c
+  kconfig: OMAP_GPMC=m
+  state: mainline
+  notes: disabled on the SK
+- name: elm
+  family: ELM
+  instances: 1
+  driver: mtd/nand/raw/omap_elm.c
+  kconfig: MTD_NAND_OMAP_BCH_BUILD=-
+  state: mainline
+  notes: disabled on the SK
+- name: a53_opp_table
+  instances: 1
+  driver: '-'
+  kconfig: '-'
+  state: no-driver
+  not_upstream: 1
+  notes: served by ti-cpufreq through the SoC compatible; not a gap. TI's ti,soc-info OPP property and k3-socinfo device link (v2 01.04.2026) not applied, only the EPROBE_DEFER patch of that series landed
+    (v7.2)
+  patches:
+  - 3c77b6800e054
+features:
+- id: display
+  state: partial
+  nodes: '4: 3 mainline, 1 node-missing'
+  drivers: 2/2 up
+  kconfig:
+  - DRM_TIDSS=m
+  - DRM_CDNS_DSI_J721E=-
+  firmware: '-'
+  gaps:
+  - dss_clk_ctrl node-missing
+  not_upstream: 19
+  notes: 'AM62x: one DSS, two OLDI TXes; AM62Px/AM67x: DSS0+DSS1, OLDI, DSI; AM62Ax: DPI only; AM62x OLDI is mainline (tidss OLDI bridge v6.17, oldi0/oldi1 nodes, dss_vp1_clk divider); of the 20 TI patches
+    one landed (vblank time, v6.19), the FROMLIST ones (OLDI polarities, DPIENABLE, DPI detect, i2097, sampling edge, dispc_is_idle, display sharing) are in Tomi Valkeinen''s prep series v1 03.09.2026,
+    open, reviewed/tested by TI (https://lore.kernel.org/all/20260903-tidss-pre-beagley-v1-0-93928baa8b12@ideasonboard.com/) and the BeagleY-AI series v3 29.05.2026 (AM62P DSS, not AM62x); 7 PENDING and
+    2 HACK are TI-only (ALWAYS_ON_DISPLAY and SELF_REFRESH properties, splash screen, crtc timings, PM domains on probe, DPI0_CLK_CTRL fix, errata log level); dss_clk_ctrl is SDK glue, see Components'
+  patches:
+  - d8010203f321e
+  - 618fe92b83919
+  - 503a5bbc6001f
+  - f15d6df109152
+  - 40b6e53f39c5c
+  - 1426165edca26
+  - 5a4a441d0fd6e
+  - 6913a7eb05206
+  - 4615c56b34aaf
+  - 0dfafdaeac875
+  - 3247861c0d0b1
+  - 653460b9520d9
+  - 1b49e05cded08
+  - 2b7c614738790
+  - 5a162b36442e9
+  - a6632fce4b3a0
+  - c228d38dc9eb4
+  - f91a62b62aa2e
+  - 9c79055b56e80
+  - 5b02eb518de42
+- id: gpu
+  state: mainline
+  nodes: '1: 1 mainline'
+  drivers: 1/1 up
+  kconfig:
+  - DRM_POWERVR=m
+  firmware: ok
+  gaps: []
+  not_upstream: 0
+  notes: 'driver state says nothing about GLES/Vulkan conformance - keep the graphics section of the report; AXE-1-16M: DRM_POWERVR since v6.8, node mainline, firmware rogue_33.15.11.3 in linux-firmware;
+    TI''s build guide: open-source stack available for AXE-1-16M, Vulkan via Mesa pvr, GL 2.1 via Zink (experimental, not mainline Mesa)'
+  patches: []
+- id: csi2rx
+  state: mainline
+  nodes: '2: 2 mainline'
+  drivers: 2/2 up
+  kconfig:
+  - VIDEO_TI_J721E_CSI2RX=m
+  - VIDEO_CADENCE_CSI2RX=m
+  firmware: '-'
+  gaps: []
+  not_upstream: 11
+  notes: 'AM67x: four CSI-2 RX instances; the 26 TI patches are mostly stale: runtime PM, system suspend and the multistream rework landed in v7.2, RAW12 bayer formats are in linux-next since 11.09.2026
+    (v7.4); TI-only: metadata formats, 10-bit GREY, RAW10 RGBIr, DMA init at probe (PENDING, not posted) and the drain HACK; DT gap: mainline k3-am62-main.dtsi gives the CSI2RX shim one BCDMA channel (rx0),
+    TI''s dtsi four (rx0-rx3), and the multi-stream DT series v3 23.09.2026 adds the channels for AM62P/J722S/J7 only, not for AM62x (https://lore.kernel.org/all/20260923093459.28125-1-y-abhilashchandra@ti.com/)'
+  patches:
+  - b406bb58f3b8d
+  - 9cab355012338
+  - d6cfd780de35c
+  - 2c5c2c824d929
+  - 6221cc8cc2284
+  - ac5a859e888fe
+  - ca82460b4b983
+  - d1c2fd3834cef
+  - f5e747591c7a3
+  - ddd48e00fec91
+  - f94926abd8b56
+  - 806e040085eaf
+  - 014d1e0775dda
+  - d27bd88b9c39b
+  - ac1795b2d48c4
+  - 305b5bc214219
+  - 38420b1e8dcd5
+  - 85662a7036de2
+  - 79a5c6a2f01a1
+  - 994b9cb7e27bc
+  - 3c6504c841100
+  - 7390045d5c25b
+  - 5eaaf89b3e369
+  - 22cdde5737b63
+  - b83d50eed74b5
+  - 991bd727ced8b
+- id: m4f
+  state: mainline
+  nodes: '1: 1 mainline'
+  drivers: 1/1 up
+  kconfig:
+  - TI_K3_M4_REMOTEPROC=m
+  firmware: ok
+  gaps: []
+  not_upstream: 6
+  notes: 'graceful shutdown v2 25.11.2025 open, discussed until 21.01.2026 (Mathieu Poirier, Patrick Oppenlander), no v3 (https://lore.kernel.org/all/20251125083746.2605721-1-b-padhi@ti.com/); suspend/resume,
+    PM QoS handler, IPC-only ops override and MCU-initiated system shutdown (08.10.2026) are TI PENDING, not posted; TI''s upstream page: without them mainline needs rmmod ti_k3_m4_remoteproc before suspend;
+    firmware am62-mcu-m4f0_0-fw in ti-linux-firmware (ti-ipc)'
+  patches:
+  - bdbdb414e41af
+  - 9030b8eb049f4
+  - 2a11f909d4855
+  - 4fc7b1abe4384
+  - 6d8147977b2d9
+  - 6700f98635bba
+- id: dm
+  state: partial
+  nodes: '2: 1 mainline, 1 parent'
+  drivers: 1/1 up
+  kconfig:
+  - TI_K3_R5_REMOTEPROC=m
+  firmware: 'missing: am62-wkup-r5f0_0-fw'
+  gaps:
+  - firmware am62-wkup-r5f0_0-fw missing
+  not_upstream: 0
+  notes: the DM firmware is loaded by U-Boot; Linux needs the node for IPC and low power; the firmware-name is the BSP's name for ti-dm/am62xx/ipc_echo_testb_mcu1_0_release_strip.xer5f; no AM62x DM series
+    pending (IO+DDR is AM62A/AM62P only)
+  patches: []
+- id: ipc
+  state: mainline
+  nodes: '4: 4 mainline'
+  drivers: 5/5 up
+  kconfig:
+  - OMAP2PLUS_MBOX=m
+  - TI_MESSAGE_MANAGER=-
+  - HWSPINLOCK_OMAP=m
+  - RPMSG_VIRTIO=y
+  - RPMSG_CHAR=m
+  - RPMSG_CTRL=m
+  firmware: ok
+  gaps: []
+  not_upstream: 3
+  notes: 3 minor TI patches (mailbox ifdef cleanup, remoteproc suspend order, rpmsg char endpoint HACK), not posted
+  patches:
+  - c86ed51e8530d
+  - e73de5a828cf2
+  - 597d1b29972ff
+- id: pru
+  state: partial
+  nodes: '6: 5 mainline, 1 vendor-only'
+  drivers: 3/4 up
+  kconfig:
+  - TI_PRUSS=m
+  - PRU_REMOTEPROC=-
+  - TI_PRUSS_INTC=-
+  - ~SERIAL_8250_PRUSS=m
+  firmware: 'missing: am62x-pru0-fw am62x-pru1-fw'
+  gaps:
+  - pruss_uart vendor-only
+  - 8250_pruss.c vendor-only
+  - SERIAL_8250_PRUSS vendor-only
+  - firmware am62x-pru0-fw missing
+  - firmware am62x-pru1-fw missing
+  not_upstream: 7
+  notes: no ICSSM Ethernet nodes for AM62x in the TI kernel either; PRU firmware is application specific (no am62x-pru*-fw in ti-linux-firmware); PRU UART driver v1 13.05.2025 stalled after review (see
+    Components); irq-pruss-intc fixes v2 18.02.2026 (Meghana Malladi) not in mainline or -next (https://lore.kernel.org/all/20260218093730.3123342-2-m-malladi@ti.com/); PRU IPC-only mode and virtio rpmsg
+    are TI PENDING, not posted
+  patches:
+  - a11ada06bade0
+  - 42cfc32a41894
+  - da8bf89e4df30
+  - 766c4634c1b79
+  - 52bd0c5a51594
+  - 43153fe972a74
+  - 6a1c08be7d1c8
+- id: cpsw
+  state: mainline
+  nodes: '4: 4 mainline'
+  drivers: 3/3 up
+  kconfig:
+  - TI_K3_AM65_CPSW_NUSS=y
+  - TI_K3_AM65_CPTS=y
+  - PHY_TI_GMII_SEL=-
+  firmware: '-'
+  gaps: []
+  not_upstream: 50
+  notes: 'base function, PTP and TSN are mainline; most of the 51 TI patches are not AM62x: the CPSW proxy client (30+ PENDING, AM64x EthFw) and cut-thru (AM64x); AF_XDP zero copy v2 09.11.2025 (Roger Quadros)
+    open, no v3 (https://lore.kernel.org/all/20251109-am65-cpsw-xdp-zc-v2-0-858f60a09d12@kernel.org/); flow classification and ALE policer save/restore carry FROMLIST but were not found on lore (?); ALE
+    multicast fix landed v7.0; PENDING fixes (IRQ affinity, Rx teardown descriptor leak, port lookup) not posted'
+  patches:
+  - 77c46e96f0fc6
+  - d6380d740b3af
+  - efa2318f0503e
+  - 5cf8c52a0049c
+  - 515560de269fe
+  - a5f1139ee698c
+  - 8bc8c937d5158
+  - 280e1fb7e6885
+  - a1c24b26acc75
+  - 7a30596423eec
+  - 562e22a18d0a3
+  - e9ebc82517563
+  - 2364e31fc45c0
+  - a437b19f2ba2c
+  - df3e83610ee3d
+  - e26775829994a
+  - 0738746733470
+  - a84a44bf8dccb
+  - cfa1919c2c8ea
+  - a7e0a89eb1f2a
+  - 53e2c1924e851
+  - 4121f1992bffe
+  - f1ae70deb8cb8
+  - 58b80f76f15a0
+  - 820111fb3f605
+  - 943c96f5d3b72
+  - 0d9630f7615f6
+  - e4ce6195bba83
+  - 0d74588a12655
+  - 4b79ae6df6b7e
+  - 9cac680015e25
+  - 45fc7300b5fd8
+  - e7d689b5b97b9
+  - a035e9317fc12
+  - 1859ce64efd77
+  - aa54eb7781977
+  - 3acaadec5d0a5
+  - 8a55c76b9a08a
+  - 0b4096523c125
+  - b4864f105e9d7
+  - 1a24d10bb0370
+  - 5167921d7e4a2
+  - f90d4e25186a6
+  - c9ebb25d9cc44
+  - c60af71b3ae52
+  - 764cbf4788512
+  - a13322b327ffa
+  - 1440337f63e80
+  - 388e2aafdb808
+  - 48f6254a24fc7
+  - cb243d074d4bf
+  - 087f4f7c4cbec
+  - ee9922bcc2015
+  - 0d4a4f60491db
+- id: usb_dwc3
+  state: mainline
+  nodes: '6: 6 mainline'
+  drivers: 1/1 up
+  kconfig:
+  - USB_DWC3_AM62=-
+  firmware: '-'
+  gaps: []
+  not_upstream: 0
+  notes: ''
+  patches: []
+- id: mmc
+  state: mainline
+  nodes: '3: 3 mainline'
+  drivers: 1/1 up
+  kconfig:
+  - MMC_SDHCI_AM654=y
+  firmware: '-'
+  gaps: []
+  not_upstream: 7
+  notes: 7 TI PENDING patches (DLL defaults and FRQSEL, DDR52 limited to 40 MHz on AM62, POWER_ON polling, J721e OTAP), not posted
+  patches:
+  - 64e9b92b3b977
+  - a82c9e552b062
+  - aa9f8489fd8ff
+  - e6ede70d8218e
+  - 6e8405bd916cb
+  - 51f501c951075
+  - 8d8ec126d33a6
+- id: ospi
+  state: partial
+  nodes: '3: 2 mainline, 1 vendor-only'
+  drivers: 1/2 up
+  kconfig:
+  - SPI_CADENCE_QUADSPI=y
+  - MTD_SPI_NOR=y
+  - ~TI_K3_FSS_FSAS=y
+  firmware: '-'
+  gaps:
+  - fsas0 vendor-only
+  - ti-k3-fsas.c vendor-only
+  - TI_K3_FSS_FSAS vendor-only
+  not_upstream: 9
+  notes: ti-k3-fsas (FSAS error handling) is TI-only; fsas driver v2 29.06.2026 open (see Components); cadence-quadspi PHY tuning / DQS series v10 29.09.2026 open (Santhosh Kumar K, https://lore.kernel.org/all/20260929063529.1235417-1-s-k6@ti.com/);
+    3 PENDING quadspi patches (DMA EPROBE_DEFER, DTR/PHY on chip-select switch, PHY restore after resume) not posted
+  patches:
+  - 5e1e6753e4bec
+  - ff54e97206dd0
+  - d9403667c9bd2
+  - 7f84755d4851c
+  - 8d901ea94a423
+  - c8b66aee85dbd
+  - 31f9e54858111
+  - c206487ddac5c
+  - 2c5bc6ca165b1
+- id: gpmc
+  state: mainline
+  nodes: '2: 2 mainline'
+  drivers: 3/3 up
+  kconfig:
+  - OMAP_GPMC=m
+  - MTD_NAND_OMAP2=m
+  - MTD_NAND_OMAP_BCH=y
+  firmware: '-'
+  gaps: []
+  not_upstream: 0
+  notes: 'AM62Ax/AM62Px/AM67x: TISCI knows GPMC0/ELM0 but neither kernel has a node; AM62x: gpmc0/elm0 nodes mainline, disabled on the SK'
+  patches: []
+- id: crypto
+  state: mainline
+  nodes: '3: 3 mainline'
+  drivers: 3/3 up
+  kconfig:
+  - CRYPTO_DEV_SA2UL=m
+  - HW_RANDOM_OMAP=-
+  - OPTEE=y
+  firmware: '-'
+  gaps: []
+  not_upstream: 0
+  notes: ''
+  patches: []
+- id: mcrc64
+  state: undescribed
+  nodes: '-'
+  drivers: 0/1 up
+  kconfig:
+  - ?CRYPTO_DEV_TI_MCRC64=-
+  firmware: '-'
+  gaps:
+  - MCU_MCRC64_0 undescribed
+  - MCRC64_0 undescribed
+  - mcrc64.c absent
+  - CRYPTO_DEV_TI_MCRC64 unknown
+  not_upstream: 0
+  notes: TI SDK docs still list the driver; it exists only in ti-linux-6.6.y/6.12.y (node crc@30300000, ti,am62-mcrc64), dropped from 6.18; upstream v3 30.05.2024 rejected (no in-kernel user for crc64-iso3309,
+    https://lore.kernel.org/all/20240524-mcrc64-upstream-v3-0-24b94d8e8578@ti.com/); TI's 09.2024 reply announced MCRC (crc8/16/32) drivers instead, none posted
+  patches: []
+- id: can
+  state: mainline
+  nodes: '3: 3 mainline'
+  drivers: 1/1 up
+  kconfig:
+  - CAN_M_CAN_PLATFORM=m
+  firmware: '-'
+  gaps: []
+  not_upstream: 0
+  notes: CAN wakeup from low power (ti,am62-mcan compatible, m_can out-of-band wakeup v8 01.10.2026 and DT v3 12.09.2026) is open, see Low power
+  patches:
+  - 451155af3f836
+- id: audio
+  state: mainline
+  nodes: '3: 3 mainline'
+  drivers: 1/1 up
+  kconfig:
+  - SND_SOC_DAVINCI_MCASP=m
+  firmware: '-'
+  gaps: []
+  not_upstream: 0
+  notes: 'all 8 FROMLIST patches landed (asynchronous mode, pdir, ifdef cleanup v7.0; system suspend/resume, aux_div, auxclk helper v7.1; audio-graph-card2 v7.2): effectively mainline, TI prefixes stale'
+  patches:
+  - 297065a221648
+  - 7d459df8e2329
+  - eb18986095e86
+  - 635120dd16bb4
+  - 3f096e5722016
+  - dc40efb0d31ab
+  - b9d959915f019
+  - d48ed4887dfae
+- id: pwm
+  state: mainline
+  nodes: '10: 10 mainline'
+  drivers: 3/3 up
+  kconfig:
+  - PWM_TIEHRPWM=m
+  - PWM_TIECAP=m
+  - TI_EQEP=m
+  firmware: '-'
+  gaps: []
+  not_upstream: 0
+  notes: ''
+  patches:
+  - 25e529b290fc8
+- id: watchdog
+  state: mainline
+  nodes: '7: 7 mainline'
+  drivers: 1/1 up
+  kconfig:
+  - K3_RTI_WATCHDOG=m
+  firmware: '-'
+  gaps: []
+  not_upstream: 0
+  notes: 'the one FROMLIST patch (reaction control) landed v7.2: effectively mainline'
+  patches:
+  - d992b4b35c93b
+- id: rtc
+  state: mainline
+  nodes: '1: 1 mainline'
+  drivers: 1/1 up
+  kconfig:
+  - RTC_DRV_TI_K3=m
+  firmware: '-'
+  gaps: []
+  not_upstream: 15
+  notes: most downstream RTC patches are low-power wakeup work; 'resume from IO DDR low power mode' v2 13.03.2026 landed v7.1 (AUTOSEL to stable) despite the PENDING prefix; the other 14 (GPIO chip for
+    external wakeup pins, power-off prepare, pre-configured RTC cleanup, AM62L bits) not posted
+  patches:
+  - 86b705ce40062
+  - 3f6e01139af12
+  - 7dd1b788a8a65
+  - 23ed49769db03
+  - 0aba9fcaca1ca
+  - 0eb0451d07139
+  - 14da7d7aa119b
+  - 6f2141104dc2f
+  - 9456264c4c457
+  - c407753c97176
+  - 4de838a50db97
+  - 99ceead0c0d16
+  - bdc2913602d5e
+  - 6e0fee03dc073
+  - 9d05c67e0b2fc
+  - 9124971c9e0af
+- id: thermal
+  state: mainline
+  nodes: '3: 2 mainline, 1 no-driver'
+  drivers: 2/2 up
+  kconfig:
+  - K3_THERMAL=m
+  - ARM_TI_CPUFREQ=-
+  firmware: '-'
+  gaps: []
+  not_upstream: 1
+  notes: 'AM64x has no OPP table (fixed frequency); the a53_opp_table no-driver flag is ti-cpufreq, fine; cpufreq probe ordering v2 01.04.2026: EPROBE_DEFER landed v7.2, k3-socinfo device link and ti,soc-info
+    OPP property not applied (https://lore.kernel.org/all/20260401105404.1194717-1-a-kaur@ti.com/)'
+  patches:
+  - 28cf6b8387521
+  - 161d969c5365d
+  - 850111128b014
+- id: ddrss
+  state: undescribed
+  nodes: '-'
+  drivers: 0/4 up
+  kconfig:
+  - ?TI_K3_DDR=-
+  - ?K3_DDR_TEMP=-
+  - ?MFD_TI_DDRSS=-
+  firmware: '-'
+  gaps:
+  - DDR16SS0 undescribed
+  - k3-ddr.c absent
+  - ti-ddrss-mr4.c absent
+  - ti-ddrss-core.c absent
+  - ti_k3_ddr_perf.c absent
+  - TI_K3_DDR unknown
+  - K3_DDR_TEMP unknown
+  - MFD_TI_DDRSS unknown
+  not_upstream: 0
+  notes: 'TI SDK docs claim DDR temperature monitoring; the k3-ddr driver and the ti,am62a-ddrss node exist only in ti-linux-6.12.y, dropped from 6.18; upstream RFC 14.07.2026 (MFD + MR4 refresh + PMU,
+    AM62P node) NAKed on the bindings, no v2 (https://lore.kernel.org/all/20260714125532.3304178-1-v-mannuru@ti.com/); AM62x: DDR16SS0 (16-bit LPDDR4/DDR4); without it the DRAM keeps the refresh rate the
+    firmware sets at boot'
+  patches: []
+- id: dma
+  state: mainline
+  nodes: '4: 4 mainline'
+  drivers: 3/3 up
+  kconfig:
+  - TI_K3_UDMA=y
+  - TI_K3_UDMA_GLUE_LAYER=y
+  - TI_K3_RINGACC=-
+  firmware: '-'
+  gaps: []
+  not_upstream: 20
+  notes: k3-udma-v2 (AM62L) is TI-only; the 16 FROMLIST patches are that k3-udma-v2 refactor series, v12 07.10.2026 open (https://lore.kernel.org/all/20261007102936.2402427-1-s-adivi@ti.com/) - touches
+    the shared k3-udma code, no AM62x function; 3 PENDING fixes ('Fix sporadic crash on AM62x', BCDMA cyclic transfers, TR descriptor size) and a glue HACK not found on lore
+  patches:
+  - 06d077d8a0e9d
+  - 9600a3402af42
+  - 86a1727135dd9
+  - 88bb7b9c9aebc
+  - caa2ddf544a35
+  - 974959b2492ec
+  - c6c2661712d8e
+  - cd42079315d19
+  - 540eb7c748fdd
+  - ed1af2fda7b08
+  - 7bd5bb7d3048c
+  - 76a197340651c
+  - 41a7ae789dbd8
+  - deb839b5c622a
+  - 851b761497045
+  - 3393d94576cb8
+  - 18245a593750e
+  - c792cbaecb155
+  - 212729f01aa09
+  - f5f216d05be32
+- id: sysfw
+  state: mainline
+  nodes: '7: 7 mainline'
+  drivers: 6/6 up
+  kconfig:
+  - TI_SCI_PROTOCOL=-
+  - TI_SCI_PM_DOMAINS=y
+  - TI_SCI_CLK=y
+  - RESET_TI_SCI=y
+  - TI_SCI_INTA_IRQCHIP=y
+  - TI_SCI_INTR_IRQCHIP=y
+  firmware: '-'
+  gaps: []
+  not_upstream: 6
+  notes: 'IRQ and clock context restore, sci-clk restore_context, BOARDCFG_MANAGED and ''don''t cache clock rate'' landed v7.2, per-line interrupt types v7.0, Partial-IO v6.19; left: bulk device-state API
+    (2 unprefixed), inta IRQ affinity and lazy aggregation, sci-clk SSC (PENDING, not posted), gpio-davinci early context restore HACK'
+  patches:
+  - b9992fa271938
+  - 91a8013095384
+  - c4353db494679
+  - 9b32e0dcc35df
+  - d3df4beda5749
+  - e4f4d7c3196a9
+  - 65e319ea95dba
+  - 1697a54f23e31
+  - 79a3ceb875afd
+  - 018de445a91db
+  - 7b48f20e3f162
+  - 71d7b2dba4c8c
+  - 5c7ddeb8f2a41
+  - 52e9e3ebdb55a
+  - 70a774fd9cce0
+- id: gpio
+  state: mainline
+  nodes: '5: 5 mainline'
+  drivers: 2/2 up
+  kconfig:
+  - GPIO_DAVINCI=y
+  - PINCTRL_SINGLE=y
+  firmware: '-'
+  gaps: []
+  not_upstream: 2
+  notes: the TI padconf wakeup-interrupt extension (ti,am654-padconf + interrupt-controller) is TI-only; ti,am62l-padconf compatible landed v7.1; the padconf wake-up configuration for AM62 (pinctrl-single
+    + DT) stays a TI HACK; Main GPIO wakeup not upstream, matches TI's table
+  patches:
+  - 71d7b2dba4c8c
+  - acdd68d56ed86
+  - b37791f30871f
+- id: timesync
+  state: partial
+  nodes: '1: 1 vendor-only'
+  drivers: 1/2 up
+  kconfig:
+  - MUX_MMIO=y
+  - ~MUX_TI_K3_EVENT_ROUTER=m
+  firmware: '-'
+  gaps:
+  - timesync_router vendor-only
+  - TIMESYNC_EVENT_ROUTER0 undescribed
+  - ti-k3-event-mux.c vendor-only
+  - MUX_TI_K3_EVENT_ROUTER vendor-only
+  not_upstream: 0
+  notes: mainline AM64x describes it as pinctrl-single; TI's ti,am62l-event-mux-router driver is TI-only; pending v1 28.08.2026, binding discussion (see Components); node disabled on the SK
+  patches: []
+- id: lpm
+  state: partial
+  nodes: '6: 4 no-driver, 2 mainline'
+  drivers: 4/5 up
+  kconfig:
+  - SUSPEND=-
+  - CPU_IDLE=-
+  - ARM_PSCI_CPUIDLE=y
+  - ~TI_K3_WKUP_SRC_NOTIFY=m
+  firmware: ok
+  gaps:
+  - WKUP_DEEPSLEEP_SOURCES0 undescribed
+  - k3-wkup-src-notify.c vendor-only
+  - TI_K3_WKUP_SRC_NOTIFY vendor-only
+  not_upstream: 29
+  notes: 'the modes themselves live in TF-A and the DM firmware; the kernel side is the per-driver suspend/resume stack - read the patch list, not the DT. AM67x and AM64x: no idle states in the TI kernel;
+    TI 12.01 table for AM62x: DeepSleep, MCU-only, Partial-IO, DFS, Runtime PM upstream (DeepSleep and MCU-only with the M4F caveat: remoteproc graceful shutdown and suspend are not upstream, rmmod ti_k3_m4_remoteproc
+    before suspend), Standby not, no IO+DDR on AM62x; wake sources RTC, WKUP GPIO, USB, WKUP UART, MCU IPC upstream, Main UART yes (k3-am62x-sk-common, v7.1), Main GPIO no (TI HACK), CAN daisy chain only
+    for Partial-IO; trees: standby idle-state DT v1 20.08.2026 open, discussed with Nishanth Menon until 11.09.2026 (https://lore.kernel.org/all/20260820-upstream-standby-v1-0-6a0553b9713d@ti.com/) although
+    TI''s page (28.07.2026) says no series is pending for AM62x; m_can out-of-band wakeup v8 01.10.2026 (https://lore.kernel.org/all/20261001-temp-v8-0-489dd82e4b50@ti.com/) and ti,am62-mcan DT v3 12.09.2026
+    (https://lore.kernel.org/all/20260912-smth-v3-0-6fa661ae5a4c@ti.com/) open; pmdomain resume-latency constraints v6 24.09.2026 open (https://lore.kernel.org/all/20260924-topic-lpm-pmdomain-device-constraints-v6-0-a69a4856252b@baylibre.com/);
+    wakeup-source-notify driver (TI builds it =m), 14 rtc-ti-k3 patches, remoteproc suspend/resume and the Main/MCU GPIO wakeup-source DT are TI-only, not posted; the out-of-band wakeup core, Partial-IO
+    and m_can WoL/pinctrl wakeup carry UPSTREAM prefixes and are in; CPU_IDLE has no explicit line in TI''s config, ARM_PSCI_CPUIDLE=y selects it'
+  patches:
+  - 07ddb35ce84eb
+  - e325569e29345
+  - 9e9d9c5287fc3
+  - 712940cde1df4
+  - 86b705ce40062
+  - 7dd6736398756
+  - 87b321f7904ec
+  - 01d435e80f16e
+  - 9b32e0dcc35df
+  - e4f4d7c3196a9
+  - db02372e593ad
+  - a99790e707956
+  - 0e2a517aa8de6
+  - 14cad359aa2b9
+  - c72a4947859d8
+  - d9afa9f8e365d
+  - 58441ab003138
+  - 635120dd16bb4
+  - ef7b57fc73505
+  - 3f6e01139af12
+  - 23ed49769db03
+  - 0aba9fcaca1ca
+  - 0eb0451d07139
+  - c407753c97176
+  - 4de838a50db97
+  - e73de5a828cf2
+  - 597d1b29972ff
+  - 3fd38d73b987d
+  - 4fc7b1abe4384
+  - ef74d4cc0901a
+  - 2b3ffc4de95c6
+  - 7f84755d4851c
+  - 8eba948fce31f
+  - 3033b9ac95b57
+  - 89fe135b5e71f
+  - 6c222f77f7713
+  - b3c8ea28b73e5
+  - 44bc5f27c3e3c
+  - 6e0fee03dc073
+  - 9d05c67e0b2fc
+  - 71d7b2dba4c8c
+  - 2b88b7a671752
+  - 7d5db8a0ee7aa
+  - d7608df3f42bf
+  - 61bc5b8b54400
+  - acdd68d56ed86
+  - 95c8d4e9ea508
+  - f94926abd8b56
+  - 806e040085eaf
+  - e5abb4e258a1a
+  - e9676c58b7e7f
+  - 5c7ddeb8f2a41
+  - fe87c732ab2a6
+  - 9c14f08e16c10
+  - 0ca6e13c79cb9
+  - 52e9e3ebdb55a
+  - c0b4fea1101c0
+  - ab4e72e983f7a
+- id: wifi
+  state: vendor-only
+  nodes: '-'
+  drivers: 0/2 up
+  kconfig:
+  - ~CC33XX=m
+  - ~BT_TI=-
+  firmware: ok
+  gaps:
+  - cc33xx vendor-only
+  - btti_main.c vendor-only
+  - CC33XX vendor-only
+  - BT_TI vendor-only
+  not_upstream: 20
+  notes: module on the carrier board, tracked at SoC scope in the report; TI out-of-tree driver with a series on lore; v5 07.11.2024 was the last cc33xx series (https://lore.kernel.org/all/20241107125209.1736277-1-michael.nemanov@ti.com/),
+    no v6 since; the btti Bluetooth driver was never posted; TI's 12.01 driver matches cc33xx SDK 1.0.2.10
+  patches:
+  - fa14abf25646c
+  - c214492085504
+  - d1ba06b645ef8
+  - 99416729d0b0c
+  - d836ba396cf64
+  - e88f8b77de6c3
+  - a9289a51e275a
+  - 425a8604a21bd
+  - a0b00dd075f8c
+  - b06a76949f735
+  - 750fb93232a62
+  - a0b1c1c664847
+  - 602449c0ecedd
+  - 7f105f6efd9ec
+  - 6e45ff5ff83e3
+  - af282bd7d628b
+  - 6c8a5bc53f1de
+  - 33886162bc700
+  - 32925ccad71d0
+  - 61f31d10cfae7
+- id: heaps
+  state: vendor-only
+  nodes: '-'
+  drivers: 0/2 up
+  kconfig:
+  - ~DMABUF_HEAPS_CARVEOUT=y
+  - ~SRAM_DMA_HEAP=y
+  firmware: '-'
+  gaps:
+  - carveout-heap.c vendor-only
+  - sram-dma-heap.c vendor-only
+  - DMABUF_HEAPS_CARVEOUT vendor-only
+  - SRAM_DMA_HEAP vendor-only
+  not_upstream: 0
+  notes: TI-only; TI's SDK config builds both; no series on lore
+  patches: []
+- id: esm
+  state: partial
+  nodes: '2: 2 no-driver'
+  drivers: '-'
+  kconfig: []
+  firmware: '-'
+  gaps:
+  - WKUP_ESM0 undescribed
+  not_upstream: 0
+  notes: nodes on both sides, no driver on either side (firmware / safety MCU territory); WKUP_ESM0 undescribed; no driver anywhere
+  patches: []
+patches:
+  d8010203f321e:
+    class: P
+    subject: 'PENDING: drm/tidss: Demote errata workaround messages to dev_dbg'
+  618fe92b83919:
+    class: P
+    subject: 'PENDING: drm/tidss: Fix DPI0_CLK_CTRL_DATA_CLK_INVDIS bitfield setting'
+  503a5bbc6001f:
+    class: F
+    subject: 'FROMLIST: drm/tidss: oldi: Fix OLDI signal polarities'
+    lore: https://lore.kernel.org/all/20260529-beagley-ai-display-v3-11-7fefdc5d1adf@ideasonboard.com/
+  f15d6df109152:
+    class: F
+    subject: 'FROMLIST: drm/tidss: Add support for DPIENABLE bit'
+    lore: https://lore.kernel.org/all/20260529-beagley-ai-display-v3-10-7fefdc5d1adf@ideasonboard.com/
+  40b6e53f39c5c:
+    class: F
+    subject: 'FROMLIST: drm/tidss: Add mechanism to detect DPI output'
+    lore: https://lore.kernel.org/all/20260529-beagley-ai-display-v3-8-7fefdc5d1adf@ideasonboard.com/
+  1426165edca26:
+    class: F
+    subject: 'FROMLIST: drm/tidss: oldi: Remove define for unused register OLDI_LB_CTRL'
+    lore: https://lore.kernel.org/all/20260529-beagley-ai-display-v3-7-7fefdc5d1adf@ideasonboard.com/
+  5a4a441d0fd6e:
+    class: F
+    subject: 'FROMLIST: drm/tidss: Remove extra pm_runtime_mark_last_busy'
+    lore: https://lore.kernel.org/all/20260529-beagley-ai-display-v3-6-7fefdc5d1adf@ideasonboard.com/
+  6913a7eb05206:
+    class: F
+    subject: 'FROMLIST: drm/tidss: Fix synclost issue while disabling layer due to erratum i2097'
+    lore: https://lore.kernel.org/all/20260701063337.2165966-1-y-d@ti.com/
+  4615c56b34aaf:
+    class: P
+    subject: 'PENDING: drm/tidss: Add ALWAYS_ON_DISPLAY CRTC property to keep display pipeline'
+  0dfafdaeac875:
+    class: P
+    subject: 'PENDING: drm/tidss: Add SELF_REFRESH plane property for hardware FIFO mode'
+  3247861c0d0b1:
+    class: H
+    subject: 'TI: HACK: drm/tidss: Disable DPI enable bit on AM62L when using DSI bridge'
+  653460b9520d9:
+    class: F
+    subject: 'FROMLIST: drm/tidss: Fix sampling edge configuration'
+    lore: http://lore.kernel.org/all/20250730-fix-edge-handling-v1-4-1bdfb3fe7922@bootlin.com/
+  1b49e05cded08:
+    class: F
+    subject: 'FROMLIST: drm/tidss: Add support for display sharing'
+    lore: https://lore.kernel.org/all/20240116134142.2092483-1-devarsht@ti.com/
+  2b7c614738790:
+    class: F
+    subject: 'FROMLIST: drm: tidss: tidss_drv: Add support for AM62P display subsystem'
+    lore: https://lore.kernel.org/all/20260116095406.2544565-4-s-jain1@ti.com/
+  5a162b36442e9:
+    class: P
+    subject: 'PENDING: drm/tidss: Populate crtc_* timing params'
+  a6632fce4b3a0:
+    class: F
+    subject: 'FROMLIST: drm/tidss: Set vblank (event) time at crtc_atomic_enable'
+    upstream: 8cde1c9b19723
+    lore: https://lore.kernel.org/all/20250905-tidss-fix-timestamp-v1-2-c2aedf31e2c9@ideasonboard.com/
+  c228d38dc9eb4:
+    class: H
+    subject: 'TI: HACK: drm: tidss: Soft reset dispc if simple-framebuffer is absent'
+  f91a62b62aa2e:
+    class: P
+    subject: 'PENDING: drm/tidss: Add some support for splash-screen'
+  9c79055b56e80:
+    class: P
+    subject: 'PENDING: drm/tidss: Power up attached PM domains on probe'
+  5b02eb518de42:
+    class: F
+    subject: 'FROMLIST: drm/tidss: Add dispc_is_idle()'
+    lore: https://lore.kernel.org/all/20231101-tidss-probe-v1-8-45149e0f9415@ideasonboard.com/
+  b406bb58f3b8d:
+    class: P
+    subject: 'PENDING: media: ti: csi2rx: Add metadata formats'
+  9cab355012338:
+    class: P
+    subject: 'PENDING: media: cadence: csi2rx: Add metadata formats'
+  d6cfd780de35c:
+    class: P
+    subject: 'PENDING: media: cadence: csi2rx: Support RAW12 bayer formats'
+  2c5c2c824d929:
+    class: P
+    subject: 'PENDING: media: ti: csi2rx: Support RAW12 bayer formats'
+  6221cc8cc2284:
+    class: P
+    subject: 'PENDING: media: cadence: csi2rx: Add 10-bit GREY formats'
+  ac5a859e888fe:
+    class: P
+    subject: 'PENDING: media: ti: j721e-csi2rx: Add 10-bit GREY formats'
+  ca82460b4b983:
+    class: P
+    subject: 'PENDING: media: platform: ti: j721e-csi2rx: Initialize DMA at probe time'
+  d1c2fd3834cef:
+    class: H
+    subject: 'HACK: media: ti: j721e-csi2rx: Remove DRAINING state and mark all buffers as DONE'
+  f5e747591c7a3:
+    class: P
+    subject: 'PENDING: media: ti: j721e-csi2rx: Add RAW10 RGBIr formats'
+  ddd48e00fec91:
+    class: P
+    subject: 'PENDING: media: cadence: csi2rx: Add RAW10 RGBIr formats'
+  f94926abd8b56:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: Support system suspend using pm_notifier'
+    upstream: ec8d4573c3d51
+    lore: https://lore.kernel.org/all/20260209183456.1906327-18-r-donadkar@ti.com/
+  806e040085eaf:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: Support runtime suspend'
+    upstream: c0429f49f4267
+    lore: https://lore.kernel.org/all/20260209183456.1906327-17-r-donadkar@ti.com/
+  014d1e0775dda:
+    class: F
+    subject: 'FROMLIST: media: cadence: csi2rx: Support runtime PM'
+    upstream: c85d3d5362a83
+    lore: https://lore.kernel.org/all/20260209183456.1906327-16-r-donadkar@ti.com/
+  d27bd88b9c39b:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: Change the drain architecture for multistream'
+    upstream: 13ef2b0fa7e84
+    lore: https://lore.kernel.org/all/20260209183456.1906327-15-r-donadkar@ti.com/
+  ac1795b2d48c4:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: Submit all available buffers'
+    upstream: 7b6887a034e45
+    lore: https://lore.kernel.org/all/20260209183456.1906327-14-r-donadkar@ti.com/
+  305b5bc214219:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: add multistream support'
+    upstream: 3ed9c0a1fdbac
+    lore: https://lore.kernel.org/all/20260209183456.1906327-13-r-donadkar@ti.com/
+  38420b1e8dcd5:
+    class: F
+    subject: 'FROMLIST: media: cadence: csi2rx: add multistream support'
+    upstream: c974827d4b08d
+    lore: https://lore.kernel.org/all/20260209183456.1906327-12-r-donadkar@ti.com/
+  85662a7036de2:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: add support for processing virtual channels'
+    upstream: d71fc9d98cf73
+    lore: https://lore.kernel.org/all/20260209183456.1906327-11-r-donadkar@ti.com/
+  79a5c6a2f01a1:
+    class: F
+    subject: 'FROMLIST: media: cadence: csi2rx: add get_frame_desc wrapper'
+    lore: https://lore.kernel.org/all/20260209183456.1906327-10-r-donadkar@ti.com/
+  994b9cb7e27bc:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: get number of contexts from device tree'
+    upstream: 57283236b7a28
+    lore: https://lore.kernel.org/all/20260209183456.1906327-9-r-donadkar@ti.com/
+  3c6504c841100:
+    class: F
+    subject: 'FROMLIST: media: cadence: csi2rx: Move to .enable/disable_streams API'
+    upstream: 8b08ed98f8601
+    lore: https://lore.kernel.org/all/20260209183456.1906327-8-r-donadkar@ti.com/
+  7390045d5c25b:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: add a subdev for the core device'
+    upstream: 982135c0eac6d
+    lore: https://lore.kernel.org/all/20260209183456.1906327-7-r-donadkar@ti.com/
+  5eaaf89b3e369:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: allocate DMA channel based on context index'
+    upstream: 16fe3fc16e4b3
+    lore: https://lore.kernel.org/all/20260209183456.1906327-6-r-donadkar@ti.com/
+  22cdde5737b63:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: prepare SHIM code for multiple contexts'
+    upstream: e94ae7d2827d9
+    lore: https://lore.kernel.org/all/20260209183456.1906327-5-r-donadkar@ti.com/
+  b83d50eed74b5:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: separate out device and context'
+    upstream: c071e5fd44944
+    lore: https://lore.kernel.org/all/20260209183456.1906327-4-r-donadkar@ti.com/
+  991bd727ced8b:
+    class: F
+    subject: 'FROMLIST: media: ti: j721e-csi2rx: Remove word size alignment on frame width'
+    upstream: 148d96822b100
+    lore: https://lore.kernel.org/all/20260209183456.1906327-2-r-donadkar@ti.com/
+  bdbdb414e41af:
+    class: P
+    subject: 'PENDING: remoteproc: ti_k3: Add support for MCU-initiated system shutdown'
+  9030b8eb049f4:
+    class: P
+    subject: 'PENDING: remoteproc: k3: Add PM QoS request handler to k3_rproc'
+  2a11f909d4855:
+    class: P
+    subject: 'PENDING: remoteproc: k3-m4: Fix platform driver data type mismatch'
+  4fc7b1abe4384:
+    class: P
+    subject: 'PENDING: remoteproc: k3-m4: Add support for suspend/resume'
+  6d8147977b2d9:
+    class: P
+    subject: 'PENDING: remoteproc: k3-m4: Override rproc ops for IPC-only mode'
+  6700f98635bba:
+    class: F
+    subject: 'FROMLIST: remoteproc: k3: support for graceful shutdown of remote cores'
+    lore: https://lore.kernel.org/all/20251125083746.2605721-1-b-padhi@ti.com
+  c86ed51e8530d:
+    class: H
+    subject: 'TI: HACK: rpmsg: char: Update local endpt address for virtio-rpmsg backend'
+  e73de5a828cf2:
+    class: P
+    subject: 'PENDING: mailbox: omap-mailbox: Remove #ifdef in suspend/resume fxns'
+  597d1b29972ff:
+    class: P
+    subject: 'PENDING: remoteproc: k3: Ensure mailbox is suspended after remoteproc'
+  a11ada06bade0:
+    class: P
+    subject: 'PENDING: remoteproc: pru: Fix build warning'
+  42cfc32a41894:
+    class: F
+    subject: 'FROMLIST: serial: 8250: add pruss uart driver'
+  da8bf89e4df30:
+    class: P
+    subject: 'PENDING: remoteproc: pru: Add support for IPC only mode'
+  766c4634c1b79:
+    class: P
+    subject: 'PENDING: remoteproc: pru: Add support for virtio rpmsg stack'
+  52bd0c5a51594:
+    class: F
+    subject: 'FROMLIST: irqchip/irq-pruss-intc: Fix processing of IEP interrupts'
+    lore: https://lore.kernel.org/all/20230919061900.369300-4-danishanwar@ti.com/
+  43153fe972a74:
+    class: F
+    subject: 'FROMLIST: irqchip/irq-pruss-intc: Fix listed IRQ type in /proc/interrupts'
+    lore: https://lore.kernel.org/all/20230919061900.369300-3-danishanwar@ti.com/
+  6a1c08be7d1c8:
+    class: F
+    subject: 'FROMLIST: irqchip/irq-pruss-intc: Fix enabling of intc events'
+    lore: https://lore.kernel.org/all/20230919061900.369300-2-danishanwar@ti.com/
+  77c46e96f0fc6:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: Fix port lookup to avoid OOB/NULL dereference'
+  d6380d740b3af:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: fix DMA Coherency'
+  efa2318f0503e:
+    class: U
+    subject: 'UPSTREAM: net: ethernet: ti: am65-cpsw-nuss: Fix rx_filter value for PTP support'
+    upstream: 840c9d13cb1ca
+    lore: https://patch.msgid.link/20260310160940.109822-1-c-vankar@ti.com
+  5cf8c52a0049c:
+    class: U
+    subject: 'UPSTREAM: net: ethernet: ti: am65-cpsw: move hw timestamping to ndo callback'
+    upstream: ed5d5928bd54f
+    lore: https://patch.msgid.link/20251016152515.3510991-2-vadim.fedorenko@linux.dev
+  515560de269fe:
+    class: U
+    subject: 'UPSTREAM: net: ethernet: ti: am65-cpsw: Use also port number to identify timestamps'
+    upstream: a23c657e332f2
+    lore: https://patch.msgid.link/20260306144439.cVwaaopR@linutronix.de
+  a5f1139ee698c:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw: remove cpsw_ale_classifier_setup_default()'
+    lore: https://lore.kernel.org/netdev/20251024-am65-cpsw-rx-class-v5-9-c7c2950a2d25@kernel.org/
+  8bc8c937d5158:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw: add network flow classification support'
+    lore: https://lore.kernel.org/netdev/20251024-am65-cpsw-rx-class-v5-8-c7c2950a2d25@kernel.org/
+  280e1fb7e6885:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: cpsw_ale: add policer save restore for PM sleep'
+    lore: https://lore.kernel.org/netdev/20251024-am65-cpsw-rx-class-v5-7-c7c2950a2d25@kernel.org/
+  a1c24b26acc75:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: cpsw_ale: return ALE index in cpsw_ale_vlan_add_modify()'
+    lore: https://lore.kernel.org/netdev/20251024-am65-cpsw-rx-class-v5-3-c7c2950a2d25@kernel.org/
+  7a30596423eec:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: am65-cpsw-nuss: Setup IRQ affinity hint for IRQs'
+  562e22a18d0a3:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: Use "port_id" to set Destination Tag'
+  e9ebc82517563:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: am65-cpsw: fix missing enable_irq on RX queue open'
+  2364e31fc45c0:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: am65-cpsw: Fix build warning'
+  a437b19f2ba2c:
+    class: H
+    subject: 'TI: HACK: net: ethernet: ti: am65-cpsw-nuss: add debugfs to cfg cut-thru params'
+  df3e83610ee3d:
+    class: H
+    subject: 'TI: net: ethernet: ti: am65-cpsw: add cut-thru support for am64 cpsw3g'
+  e26775829994a:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw-nuss/cpsw-ale: Fix multicast entry handling in ALE table'
+    upstream: be11a537224d7
+  0738746733470:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add multicast support with VLAN'
+  a84a44bf8dccb:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add VLAN support'
+  cfa1919c2c8ea:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: enable reset-recovery support'
+  a7e0a89eb1f2a:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helpers for error and recovery'
+  53e2c1924e851:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: enable client driver functionality'
+  4121f1992bffe:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helper to detach virtual ports'
+  f1ae70deb8cb8:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add ndo_set_rx_mode member'
+  58b80f76f15a0:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helpers to (de)register IPv4'
+  820111fb3f605:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: export coalescing support'
+  943c96f5d3b72:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add sw tx/rx irq coalescing'
+  0d9630f7615f6:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: implement .get_link ethtool op'
+  e4ce6195bba83:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: register ndo_validate/ndo_set_mac_addr'
+  0d74588a12655:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: implement and register ndo_tx_timeout'
+  4b79ae6df6b7e:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: implement and register ndo_get_stats64'
+  9cac680015e25:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: implement and register ndo_start_xmit'
+  45fc7300b5fd8:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: implement and register ndo_stop'
+  e7d689b5b97b9:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: implement and register ndo_open'
+  a035e9317fc12:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helpers to (de)register MAC'
+  1859ce64efd77:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add and register dma irq handlers'
+  aa54eb7781977:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helper to create netdevs'
+  3acaadec5d0a5:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add NAPI RX polling function'
+  8a55c76b9a08a:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add NAPI TX polling function'
+  0b4096523c125:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helper to init RX DMA Channels'
+  b4864f105e9d7:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helper to init TX DMA Channels'
+  1a24d10bb0370:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helpers to alloc/free resources'
+  5167921d7e4a2:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helper to attach virtual ports'
+  f90d4e25186a6:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add helper to get virtual port info'
+  c9ebb25d9cc44:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: enable message exchange with EthFw'
+  c60af71b3ae52:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: cpsw-proxy-client: add support for creating requests'
+  764cbf4788512:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: introduce the CPSW Proxy Client'
+  a13322b327ffa:
+    class: P
+    subject: 'PENDING: net: ethernet: ti: Fix descriptor leak caused by Rx teardown timeout'
+  1440337f63e80:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw: Fix clearing of irq_disabled flag in rx_poll'
+    lore: https://lore.kernel.org/all/20251109-am65-cpsw-xdp-zc-v2-7-858f60a09d12@kernel.org/
+  388e2aafdb808:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw: enable zero copy in XDP features'
+    lore: https://lore.kernel.org/all/20251109-am65-cpsw-xdp-zc-v2-6-858f60a09d12@kernel.org/
+  48f6254a24fc7:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw: Add AF_XDP zero copy for TX'
+    lore: https://lore.kernel.org/all/20251109-am65-cpsw-xdp-zc-v2-5-858f60a09d12@kernel.org/
+  cb243d074d4bf:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw: Add AF_XDP zero copy for RX'
+    lore: https://lore.kernel.org/all/20251109-am65-cpsw-xdp-zc-v2-4-858f60a09d12@kernel.org/
+  087f4f7c4cbec:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw: add XSK pool helpers'
+    lore: https://lore.kernel.org/all/20251109-am65-cpsw-xdp-zc-v2-3-858f60a09d12@kernel.org/
+  ee9922bcc2015:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw: Retain page_pool on XDP program exchange'
+    lore: https://lore.kernel.org/all/20251109-am65-cpsw-xdp-zc-v2-2-858f60a09d12@kernel.org/
+  0d4a4f60491db:
+    class: F
+    subject: 'FROMLIST: net: ethernet: ti: am65-cpsw: fix BPF Program change on multi-port CPSW'
+    lore: https://lore.kernel.org/all/20251109-am65-cpsw-xdp-zc-v2-1-858f60a09d12@kernel.org/
+  64e9b92b3b977:
+    class: P
+    subject: 'PENDING: mmc: sdhci_am654: Fix up eMMC OTAP delay for J721e SR2.0 SoC revision'
+  a82c9e552b062:
+    class: P
+    subject: 'PENDING: mmc: sdhci-am654: Optimize POWER_ON polling'
+  aa9f8489fd8ff:
+    class: P
+    subject: 'PENDING: mmc: sdhci_am654: Add SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN quirk'
+  e6ede70d8218e:
+    class: P
+    subject: 'PENDING: mmc: sdhci_am654: Allow defaults for DLL properties'
+  6e8405bd916cb:
+    class: P
+    subject: 'PENDING: mmc: sdhci_am654: Enable DLL based on mmc->actual_clock'
+  51f501c951075:
+    class: P
+    subject: 'PENDING: mmc: sdhci_am654: Fix DLL FRQSEL'
+  8d8ec126d33a6:
+    class: P
+    subject: 'PENDING: mmc: sdhci_am654: AM62: Limit DDR52 mode to 40MHz'
+  5e1e6753e4bec:
+    class: P
+    subject: 'PENDING: memory: ti-k3-fsas: Add TI FSS_FSAS driver'
+  ff54e97206dd0:
+    class: P
+    subject: 'PENDING: spi: spi-cadence-quadspi: Return EPROBE_DEFER on dma failure'
+  d9403667c9bd2:
+    class: P
+    subject: 'PENDING: spi: cadence-quadspi: Apply DTR and PHY settings while switching chip select'
+  7f84755d4851c:
+    class: P
+    subject: 'PENDING: spi: cadence-quadspi: Restore phy_settings after suspend-resume'
+  8d901ea94a423:
+    class: F
+    subject: 'FROMLIST: spi: cadence-quadspi: enable PHY for direct reads and writes'
+    lore: https://lore.kernel.org/linux-spi/485b5e4c-8260-4f40-80b1-c0e85bdeb4e9@ti.com/T/#m58cbdd5f82032122595b0e8fe6a4a887b6561740
+  c8b66aee85dbd:
+    class: F
+    subject: 'FROMLIST: spi: cadence-quadspi: restrict PHY frequency to tuned operations'
+    lore: https://lore.kernel.org/linux-spi/485b5e4c-8260-4f40-80b1-c0e85bdeb4e9@ti.com/T/#md1a6b6e23e446c79627f1d19b4bde5deab42b9d5
+  31f9e54858111:
+    class: F
+    subject: 'FROMLIST: spi: cadence-quadspi: add PHY tuning infrastructure'
+    lore: https://lore.kernel.org/linux-spi/485b5e4c-8260-4f40-80b1-c0e85bdeb4e9@ti.com/T/#m608dff06427370d9a6db7a212952a3032c0e3ea3
+  c206487ddac5c:
+    class: F
+    subject: 'FROMLIST: spi: cadence-quadspi: add DQS support to read data capture'
+    lore: https://lore.kernel.org/linux-spi/485b5e4c-8260-4f40-80b1-c0e85bdeb4e9@ti.com/T/#m15de69a0eaea03166574e2b9cba91a361e16c05d
+  2c5bc6ca165b1:
+    class: F
+    subject: 'FROMLIST: spi: cadence-quadspi: move cqspi_readdata_capture earlier'
+    lore: https://lore.kernel.org/linux-spi/485b5e4c-8260-4f40-80b1-c0e85bdeb4e9@ti.com/T/#mde3014ba7ff0a05c03e9c9a3f749cb0af74dc47c
+  451155af3f836:
+    class: U
+    subject: 'UPSTREAM: can: m_can: Return ERR_PTR on error in allocation'
+    upstream: 148e125d4e6fa
+    lore: https://patch.msgid.link/20251001-topic-mcan-wakeup-source-v6-12-v10-3-4ab508ac5d1e@baylibre.com
+  297065a221648:
+    class: F
+    subject: 'FROMLIST: ASoC: ti: davinci-mcasp: Add audio-graph-card2 and DPCM support'
+    upstream: 216f7452a68e3
+    lore: https://lore.kernel.org/all/20260603211835.635184-1-sen@ti.com/
+  7d459df8e2329:
+    class: F
+    subject: 'FROMLIST: ASoC: ti: davinci-mcasp: improve aux_div selection for mid-range dividers'
+    upstream: a8075ada4a341
+    lore: https://lore.kernel.org/all/20260305195825.9998-3-sen@ti.com/
+  eb18986095e86:
+    class: F
+    subject: 'FROMLIST: ASoC: ti: davinci-mcasp: extract mcasp_is_auxclk_enabled() helper'
+    upstream: 5bebbfd64b879
+    lore: https://lore.kernel.org/all/20260305195825.9998-2-sen@ti.com/
+  635120dd16bb4:
+    class: F
+    subject: 'FROMLIST: ASoC: ti: davinci-mcasp: Add system suspend/resume support'
+    upstream: 5879521cb5588
+    lore: https://lore.kernel.org/all/20260211221001.155843-1-sen@ti.com/
+  3f096e5722016:
+    class: F
+    subject: 'FROMLIST: ASoC: ti: davinci-mcasp: Add asynchronous mode support'
+    upstream: 9db327083f7e0
+    lore: https://lore.kernel.org/all/20260203003703.2334443-5-sen@ti.com/
+  dc40efb0d31ab:
+    class: F
+    subject: 'FROMLIST: ASoC: ti: davinci-mcasp: Streamline pdir behavior across rx & tx streams'
+    upstream: 016efcaa470cd
+    lore: https://lore.kernel.org/all/20260203003703.2334443-4-sen@ti.com/
+  b9d959915f019:
+    class: F
+    subject: 'FROMLIST: ASoC: ti: davinci-mcasp: Disambiguate mcasp_is_synchronous function'
+    upstream: e683cb088fdcb
+    lore: https://lore.kernel.org/all/20260203003703.2334443-3-sen@ti.com/
+  d48ed4887dfae:
+    class: F
+    subject: 'FROMLIST: ASoC: davinci-mcasp: remove unneeded #ifdef'
+    upstream: 0c1db36664217
+    lore: https://lore.kernel.org/all/20251205090534.27845-1-bartosz.golaszewski@oss.qualcomm.com/
+  25e529b290fc8:
+    class: U
+    subject: 'UPSTREAM: pwm: tiehrpwm: Enable pwmchip''s parent device before setting configuration'
+    upstream: d2252319f89e4
+    lore: https://git.kernel.org/pub/scm/linux/kernel/git/ukleinek/linux.git/commit/?h=pwm/for-next&id=d2252319f89e475d7e127f2e0d044c3f8bd9e199
+  d992b4b35c93b:
+    class: F
+    subject: 'FROMLIST: watchdog: rti_wdt: Add reaction control'
+    upstream: aed1abf31ea3f
+  86b705ce40062:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Remove GPIO interrupt demultiplexing in resume path'
+  3f6e01139af12:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Add support to resume from IO DDR low power mode'
+    upstream: 0e9b12ee74c57
+  7dd1b788a8a65:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Remove the extra unlock step in IRQ'
+  23ed49769db03:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Add GPIO chip support for external wakeup pins'
+  0aba9fcaca1ca:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Fix register field width and improve LPM resume detection'
+  0eb0451d07139:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Add power-off prepare handler for RTC wakeup'
+  14da7d7aa119b:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Add detection and cleanup for pre-configured RTC'
+  6f2141104dc2f:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Cleanup the driver by removing redundant fence'
+  9456264c4c457:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Clear Software poweroff enable bit'
+  c407753c97176:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Cleanup suspend resume helper''s implementation'
+  4de838a50db97:
+    class: P
+    subject: 'PENDING: rtc: ti-k3: Refactor suspend resume implementation for analog block'
+  99ceead0c0d16:
+    class: H
+    subject: 'TI: rtc: k3: Reduce log level for probe message'
+  bdc2913602d5e:
+    class: P
+    subject: 'PENDING: rtc: k3: fix RTC build warnings'
+  6e0fee03dc073:
+    class: P
+    subject: 'PENDING: rtc: k3: Fix RTC handling during AM62L deepsleep resume'
+  9d05c67e0b2fc:
+    class: P
+    subject: 'PENDING: rtc: k3: Use OFF_ON trigger for AM62L low power wake'
+  9124971c9e0af:
+    class: P
+    subject: 'PENDING: rtc: k3: Add support for AM62L RTC IP'
+  28cf6b8387521:
+    class: P
+    subject: 'PENDING: cpufreq: ti: Add device link to k3-socinfo'
+  161d969c5365d:
+    class: P
+    subject: 'PENDING: cpufreq: ti: Add EPROBE_DEFER for K3 SoCs'
+    upstream: b7a76f38ef350
+  850111128b014:
+    class: U
+    subject: 'UPSTREAM: cpufreq: ti-cpufreq: add support for AM62L3 SoC'
+    upstream: 95d097e95cf2c
+  06d077d8a0e9d:
+    class: P
+    subject: 'PENDING: dmaengine: ti: k3-udma: fix tr desc size calculation'
+  9600a3402af42:
+    class: P
+    subject: 'PENDING: dmaengine: ti: k3-udma: Fix sporadic crash on AM62x'
+  86a1727135dd9:
+    class: P
+    subject: 'PENDING: dmaengine: ti: k3-udma: Fix large BCDMA transfers for cyclic transfers'
+  88bb7b9c9aebc:
+    class: H
+    subject: 'TI: HACK: dmaengine: ti: k3-udma-glue: Fix tx channel enable function'
+  caa2ddf544a35:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: Validate resource ID and fix logging in reservation'
+  974959b2492ec:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma-v2: Update glue layer to support PKTDMA V2'
+  c6c2661712d8e:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma-v2: Add support for PKTDMA V2'
+  cd42079315d19:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma-v2: New driver for K3 BCDMA_V2'
+  540eb7c748fdd:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-psil-am62l: Add AM62Lx PSIL and PDMA data'
+  ed1af2fda7b08:
+    class: F
+    subject: 'FROMLIST: drivers: soc: ti: k3-ringacc: handle absence of tisci'
+  7bd5bb7d3048c:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: move inclusion of k3-udma-private.c to k3-udma-common.c'
+  76a197340651c:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: refactor resource setup functions'
+  41a7ae789dbd8:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: move resource management functions to k3-udma-common.c'
+  deb839b5c622a:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: move udma utility functions to k3-udma-common.c'
+  851b761497045:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: Add variant-specific function pointers to udma_dev'
+  3393d94576cb8:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: move ring management functions to k3-udma-common.c'
+  18245a593750e:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: move descriptor management to k3-udma-common.c'
+  c792cbaecb155:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: move static inline helper functions to header file'
+  212729f01aa09:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: move structs and enums to header file'
+  f5f216d05be32:
+    class: F
+    subject: 'FROMLIST: dmaengine: ti: k3-udma: move macros to header file'
+  b9992fa271938:
+    class: '?'
+    subject: 'pmdomain: ti: Use bulk API to optimize power domain initialization'
+  91a8013095384:
+    class: '?'
+    subject: 'firmware: ti_sci: Add bulk device state query API'
+  c4353db494679:
+    class: U
+    subject: 'UPSTREAM: irqchip/ti-sci-intr: Allow parsing interrupt-types per-line'
+    upstream: 3d9617ea8ab5c
+    lore: https://patch.msgid.link/20260123-ul-driver-i2c-j722s-v4-2-b08625c487d5@ti.com
+  9b32e0dcc35df:
+    class: F
+    subject: 'FROMLIST: firmware: ti_sci: add support for restoring clock context during resume'
+    upstream: dc51f820bd324
+    lore: https://lore.kernel.org/all/20260407-ti-sci-jacinto-s2r-restore-irq-v5-4-97b28f2d93f9@bootlin.com/
+  d3df4beda5749:
+    class: F
+    subject: 'FROMLIST: clk: keystone: sci-clk: add restore_context() operation'
+    upstream: 3c5912373340c
+    lore: https://lore.kernel.org/all/20260407-ti-sci-jacinto-s2r-restore-irq-v5-3-97b28f2d93f9@bootlin.com/
+  e4f4d7c3196a9:
+    class: F
+    subject: 'FROMLIST: firmware: ti_sci: add support for restoring IRQs during resume'
+    upstream: 703b341fdd875
+    lore: https://lore.kernel.org/all/20260407-ti-sci-jacinto-s2r-restore-irq-v5-2-97b28f2d93f9@bootlin.com/
+  65e319ea95dba:
+    class: F
+    subject: 'FROMLIST: firmware: ti_sci: add BOARDCFG_MANAGED mode support'
+    upstream: e9f06763b9b88
+    lore: https://lore.kernel.org/all/20260407-ti-sci-jacinto-s2r-restore-irq-v5-1-97b28f2d93f9@bootlin.com/
+  1697a54f23e31:
+    class: P
+    subject: 'PENDING: irqchip: irq-ti-sci-inta: Introduce IRQ affinity support'
+  79a3ceb875afd:
+    class: P
+    subject: 'PENDING: irqchip: irq-ti-sci-inta: Don''t aggregate event until necessary'
+  018de445a91db:
+    class: P
+    subject: 'PENDING: clk: keystone: sci-clk: Add support for clock ssc configuration'
+  7b48f20e3f162:
+    class: F
+    subject: 'FROMLIST: clk: keystone: don''t cache clock rate'
+    upstream: a80b32a140c86
+    lore: https://lore.kernel.org/all/20251223124729.2482877-3-mwalle@kernel.org/
+  71d7b2dba4c8c:
+    class: H
+    subject: 'TI: HACK: gpio: davinci: Restore GPIO context early in ti_sci_resume'
+  5c7ddeb8f2a41:
+    class: U
+    subject: 'UPSTREAM: pmdomain: ti_sci: handle wakeup constraint for out-of-band wakeup'
+    upstream: 98071d7c0123a
+  52e9e3ebdb55a:
+    class: U
+    subject: 'UPSTREAM: firmware: ti_sci: Partial-IO support'
+    upstream: e0431ff998bd3
+    lore: https://patch.msgid.link/20251103-topic-am62-partialio-v6-12-b4-v10-2-0557e858d747@baylibre.com
+  70a774fd9cce0:
+    class: U
+    subject: 'UPSTREAM: firmware: ti_sci: Support transfers without response'
+    upstream: 170a3ef6052cf
+    lore: https://patch.msgid.link/20251103-topic-am62-partialio-v6-12-b4-v10-1-0557e858d747@baylibre.com
+  acdd68d56ed86:
+    class: H
+    subject: 'TI: HACK: pinctrl: single: Change am62l-padconf to support LPM wakeup'
+  b37791f30871f:
+    class: F
+    subject: 'FROMLIST: pinctrl: pinctrl-single: add ti,am62l-padconf compatible string'
+    upstream: 0e129487c36b2
+    lore: https://lore.kernel.org/all/20260212-am62l-padconf-v1-1-0bb6f066fabd@ti.com/
+  07ddb35ce84eb:
+    class: U
+    subject: 'UPSTREAM: hwrng: core - Stop/start hwrng_fillfn() kthread before/after suspend-resume'
+    upstream: b1c0e120977f9
+  e325569e29345:
+    class: H
+    subject: 'TI: arm64: dts: ti: k3-am62: add Main GPIO and MCU GPIO wakeup sources'
+  9e9d9c5287fc3:
+    class: U
+    subject: 'UPSTREAM: net: ti: icssg: Fix XSK zero copy TX during application wakeup'
+    upstream: d95ea4bc09e88
+    lore: https://patch.msgid.link/20260618100348.2209907-1-m-malladi@ti.com
+  712940cde1df4:
+    class: U
+    subject: 'UPSTREAM: net: ti: icssg-prueth: Fix AF_XDP fill ring alloc and wakeup condition'
+    upstream: dfb787f7d157f
+    lore: https://patch.msgid.link/20260611185744.2498070-2-m-malladi@ti.com
+  7dd6736398756:
+    class: P
+    subject: 'PENDING: soc: ti: k3: add wakeup source notify driver'
+  87b321f7904ec:
+    class: F
+    subject: 'FROMLIST: media: chips-media: wave5: Resume device before setting EOS flag'
+    upstream: a52e6f7923c17
+  01d435e80f16e:
+    class: U
+    subject: 'UPSTREAM: scsi: ufs: ti-j721e: Add suspend-resume support'
+    upstream: 02880c083c131
+    lore: https://patch.msgid.link/20251106-scsi-ufs-ti-j721e-suspend-resume-support-v1-1-6f395f51219e@bootlin.com
+  db02372e593ad:
+    class: H
+    subject: 'TI: HACK: gpio: pca953x: move suspend()/resume() to suspend_noirq()/resume_noirq()'
+    lore: https://lore.kernel.org/all/CAMuHMdVnKX23yi7ir1LVxfXAMeeWMFzM+cdgSSTNjpn1OnC2xw@mail.gmail.com/
+  a99790e707956:
+    class: U
+    subject: 'UPSTREAM: mux: mmio: Add suspend and resume support'
+    upstream: 4863cb2b0f505
+    lore: https://patch.msgid.link/20251013-mux-mmio-resume-support-v5-1-de9467ceb2b2@bootlin.com
+  0e2a517aa8de6:
+    class: U
+    subject: 'UPSTREAM: phy: ti: phy-j721e-wiz: restore mux selection during resume'
+    upstream: 53f6240e88c9e
+    lore: https://patch.msgid.link/20251216-phy-ti-phy-j721e-wiz-resume-restore-mux-sel-v1-1-771d564db966@bootlin.com
+  14cad359aa2b9:
+    class: U
+    subject: 'UPSTREAM: phy: cadence-torrent: restore parent clock for refclk during resume'
+    upstream: 434e1a0ee145d
+    lore: https://patch.msgid.link/20251216-phy-cadence-torrent-resume-restore-refclk-parent-v3-1-8a7ed84b47e3@bootlin.com
+  c72a4947859d8:
+    class: U
+    subject: 'UPSTREAM: usb: cdns3: fix role switching during resume'
+    upstream: 87e4b043b98a1
+    lore: https://patch.msgid.link/20260130-usb-cdns3-fix-role-switching-during-resume-v1-1-44c456852b52@bootlin.com
+  d9afa9f8e365d:
+    class: H
+    subject: 'TI: arm64: dts: ti: k3-am62: add wakeup-source property to mcan'
+  58441ab003138:
+    class: F
+    subject: 'FROMLIST: drm/bridge: sii902x: Add audio context to suspend/resume routine'
+    lore: https://lore.kernel.org/all/20260211211018.149916-1-sen@ti.com/
+  ef7b57fc73505:
+    class: H
+    subject: 'TI: HACK: remoteproc: k3: Ping remote core on MCU only LPM resume.'
+  3fd38d73b987d:
+    class: P
+    subject: 'PENDING: remoteproc: k3-r5: add support for PM suspend/resume'
+  ef74d4cc0901a:
+    class: P
+    subject: 'PENDING: remoteproc: k3-dsp: Add support for suspend/resume'
+  2b3ffc4de95c6:
+    class: P
+    subject: 'PENDING: remoteproc: k3: Add support for suspend/resume handlers'
+  8eba948fce31f:
+    class: F
+    subject: 'FROMLIST: pmdommain: add support system-wide resume latency constraints'
+    lore: https://lore.kernel.org/r/20260205-topic-lpm-pmdomain-device-constraints-v2-3-61f7be7d35ac@baylibre.com
+  3033b9ac95b57:
+    class: U
+    subject: 'UPSTREAM: cpuidle: Respect the CPU system wakeup QoS limit for cpuidle'
+    upstream: 2b8d594742398
+    lore: https://patch.msgid.link/20251125112650.329269-6-ulf.hansson@linaro.org
+  89fe135b5e71f:
+    class: U
+    subject: 'UPSTREAM: sched: idle: Respect the CPU system wakeup QoS limit for s2idle'
+    upstream: 99b42445f4a4a
+    lore: https://patch.msgid.link/20251125112650.329269-5-ulf.hansson@linaro.org
+  6c222f77f7713:
+    class: U
+    subject: 'UPSTREAM: pmdomain: Respect the CPU system wakeup QoS limit for cpuidle'
+    upstream: e2e4695f015ea
+    lore: https://patch.msgid.link/20251125112650.329269-4-ulf.hansson@linaro.org
+  b3c8ea28b73e5:
+    class: U
+    subject: 'UPSTREAM: pmdomain: Respect the CPU system wakeup QoS limit for s2idle'
+    upstream: 8e7de6dc42097
+    lore: https://patch.msgid.link/20251125112650.329269-3-ulf.hansson@linaro.org
+  44bc5f27c3e3c:
+    class: U
+    subject: 'UPSTREAM: PM: QoS: Introduce a CPU system wakeup QoS limit'
+    upstream: a4e6512a79d84
+    lore: https://patch.msgid.link/20251125112650.329269-2-ulf.hansson@linaro.org
+  2b88b7a671752:
+    class: H
+    subject: 'TI: arm64: dts: ti: k3-am62: Create overlay to enable standby LPM'
+  7d5db8a0ee7aa:
+    class: H
+    subject: 'TI: arm64: dts: ti: k3-am62: Create overlay for IO DDR wakeup sources'
+  d7608df3f42bf:
+    class: H
+    subject: 'TI: arm64: dts: ti: k3-am62: Create a single LPM wkup sources overlay'
+  61bc5b8b54400:
+    class: H
+    subject: 'TI: HACK: arm64: dts: ti: Configure am62 pinctrl-single for wake-up interrupts'
+  95c8d4e9ea508:
+    class: F
+    subject: 'FROMLIST: can: m_can: set out-of-band wakeup if wakeup pinctrl exists'
+    lore: https://lore.kernel.org/all/20260213-mcan-out-of-band-v1-1-af68d4c570b3@ti.com/
+  e5abb4e258a1a:
+    class: F
+    subject: 'FROMLIST: arm64: dts: ti: k3-am62x-sk-common: Enable Main UART wakeup'
+    upstream: 6b0b73c9fecf3
+    lore: https://lore.kernel.org/r/20260122-b4-uart-daisy-chain-dts-v4-1-cfdabdf5e6c1@ti.com
+  e9676c58b7e7f:
+    class: U
+    subject: 'UPSTREAM: serial: 8250: omap: set out-of-band wakeup if wakeup pinctrl exists'
+    upstream: b64da5b16ab3c
+    lore: https://patch.msgid.link/20260116-uart-wakeup-v2-1-0078ae9996e4@ti.com
+  fe87c732ab2a6:
+    class: U
+    subject: 'UPSTREAM: pmdomain: core: Allow power-off for out-of-band wakeup-capable devices'
+    upstream: 3b7685da41838
+  9c14f08e16c10:
+    class: U
+    subject: 'UPSTREAM: PM: wakeup: Add out-of-band system wakeup support for devices'
+    upstream: 4acbfb6c116be
+  0ca6e13c79cb9:
+    class: U
+    subject: 'UPSTREAM: arm64: dts: ti: k3-am62-lp-sk: Set wakeup-source system-states'
+    upstream: 1f2f34b619ad9
+    lore: https://patch.msgid.link/20251103-topic-am62-dt-partialio-v6-15-v5-4-b8d9ff5f2742@baylibre.com
+  c0b4fea1101c0:
+    class: U
+    subject: 'UPSTREAM: can: m_can: Support pinctrl wakeup state'
+    upstream: a77a29775373a
+    lore: https://patch.msgid.link/20251001-topic-mcan-wakeup-source-v6-12-v10-4-4ab508ac5d1e@baylibre.com
+  ab4e72e983f7a:
+    class: U
+    subject: 'UPSTREAM: can: m_can: Map WoL to device_set_wakeup_enable'
+    upstream: 04d5826b074e0
+    lore: https://patch.msgid.link/20251001-topic-mcan-wakeup-source-v6-12-v10-2-4ab508ac5d1e@baylibre.com
+  fa14abf25646c:
+    class: H
+    subject: 'TI: HACK: drivers: bluetooth: btti_uart: Remove Unused Variable'
+  c214492085504:
+    class: H
+    subject: 'TI: HACK: drivers: bluetooth: btti_uart: remove serdev_set_rts troublesome functions'
+  d1ba06b645ef8:
+    class: P
+    subject: 'PENDING: bluetooth: add cc33xx BLE UART and SDIO drivers'
+  99416729d0b0c:
+    class: P
+    subject: 'PENDING: wifi: cc33xx: update driver to match cc33xx SDK 1.0.2.10'
+  d836ba396cf64:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add Kconfig, Makefile'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-18-michael.nemanov@ti.com
+  e88f8b77de6c3:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add testmode.c, testmode.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-17-michael.nemanov@ti.com
+  a9289a51e275a:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add ps.c, ps.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-16-michael.nemanov@ti.com
+  425a8604a21bd:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add conf.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-15-michael.nemanov@ti.com
+  a0b00dd075f8c:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add scan.c, scan.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-14-michael.nemanov@ti.com
+  b06a76949f735:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add init.c, init.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-13-michael.nemanov@ti.com
+  750fb93232a62:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add tx.c, tx.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-12-michael.nemanov@ti.com
+  a0b1c1c664847:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add rx.c, rx.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-11-michael.nemanov@ti.com
+  602449c0ecedd:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add main.c'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-10-michael.nemanov@ti.com
+  7f105f6efd9ec:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add boot.c, boot.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-9-michael.nemanov@ti.com
+  6e45ff5ff83e3:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add event.c, event.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-8-michael.nemanov@ti.com
+  af282bd7d628b:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add acx.c, acx.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-7-michael.nemanov@ti.com
+  6c8a5bc53f1de:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add cmd.c, cmd.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-6-michael.nemanov@ti.com
+  33886162bc700:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add sdio.c, io.c, io.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-5-michael.nemanov@ti.com
+  32925ccad71d0:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add debug.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-4-michael.nemanov@ti.com
+  61f31d10cfae7:
+    class: F
+    subject: 'FROMLIST: wifi: cc33xx: Add cc33xx.h, cc33xx_i.h'
+    lore: https://lore.kernel.org/r/20241107125209.1736277-3-michael.nemanov@ti.com
+  714c09594ecee:
+    class: U
+    subject: 'UPSTREAM: dt-bindings: pinctrl: pinctrl-single: add ti,am62l-padconf compatible'
+    upstream: a7b4825cb1346
+    lore: https://lore.kernel.org/linux-arm-kernel/20250912-am62lx-v6-2-29d5a6c60512@ti.com/
+  b7c8155312ae4:
+    class: F
+    subject: 'FROMLIST: clocksource/drivers/timer-ti-dm: Add clockevent support'
+    upstream: e393cca0388c2
+    lore: https://lore.kernel.org/r/20260204-topic-ti-dm-clkevt-v6-16-v3-3-83e65d01f4ae@baylibre.com
+  d694905124722:
+    class: F
+    subject: 'FROMLIST: clocksource/drivers/timer-ti-dm: Add clocksource support'
+    upstream: b8eeeca554565
+    lore: https://lore.kernel.org/r/20260204-topic-ti-dm-clkevt-v6-16-v3-2-83e65d01f4ae@baylibre.com
+  618141ce5bee3:
+    class: F
+    subject: 'FROMLIST: spi: spi-omap2-mcspi: Use EOW interrupt for completion when DMA enabled'
+    lore: https://lore.kernel.org/all/20220822091531.27827-3-vaishnav.a@ti.com/
+  '7337682258523':
+    class: P
+    subject: 'PENDING: spi: spi-omap2-mcspi.c: Enable turbo mode for all the McSPI clock freq'
+  cb43feec76010:
+    class: U
+    subject: 'UPSTREAM: dt-bindings: interrupt-controller: ti,sci-intr: Per-line interrupt-types'
+    upstream: 7a30a7a6c81e8
+    lore: https://patch.msgid.link/20260123-ul-driver-i2c-j722s-v4-1-b08625c487d5@ti.com
+  fbeefbdddd764:
+    class: F
+    subject: 'FROMLIST: dt-bindings: watchdog: ti,rti-wdt: Add ti,am62l-rti-wdt compatible'
+    upstream: 4e9590d8d52ac
+  1151b38810628:
+    class: U
+    subject: 'UPSTREAM: dt-bindings: can: m_can: Add wakeup properties'
+    upstream: 73cc2882b644e
+    lore: https://patch.msgid.link/20251001-topic-mcan-wakeup-source-v6-12-v10-1-4ab508ac5d1e@baylibre.com
+  8277a0fadf503:
+    class: F
+    subject: 'FROMLIST: ti,j721e-system-controller.yaml: Allow audio-refclk as clock-controller child'
+    lore: https://lore.kernel.org/all/20260205130707.2033197-1-m-shah@ti.com/#t
+  abdf4e7f1d6d2:
+    class: F
+    subject: 'FROMLIST: soc: ti: k3-socinfo: Add support for AM62P variants via NVMEM'
+    upstream: 97cfbd30525ef
+  0b10bd35883bd:
+    class: F
+    subject: 'FROMLIST: dt-bindings: hwinfo: ti,k3-socinfo: Add nvmem-cells support'
+    upstream: b0ea5175358f0
+  1f43c12542a94:
+    class: F
+    subject: 'FROMLIST: clocksource/drivers/timer-ti-dm: Fix property name in comment'
+    upstream: 8ee4e6dc8b960
+    lore: https://lore.kernel.org/r/20260204-topic-ti-dm-clkevt-v6-16-v3-1-83e65d01f4ae@baylibre.com
+  63dc62d7c0193:
+    class: P
+    subject: 'PENDING: dt-bindings: k3-rtc: Add support for AM62L RTC IP'
+  f844e0f42b60c:
+    class: F
+    subject: 'FROMLIST: remoteproc: k3-r5: Set a 48-bit DMA mask for remoteproc device'
+    lore: https://lore.kernel.org/all/20260727062851.2934443-2-b-padhi@ti.com
+  03e4d116a4eb3:
+    class: P
+    subject: 'PENDING: remoteproc: k3-r5: Remove redundant device link setup'
+  8f753312db559:
+    class: H
+    subject: 'TI: HACK: remoteproc: k3-r5: set r5 core boot config'
+  130f5595a99b2:
+    class: H
+    subject: 'TI: HACK: remoteproc: k3-r5: do not powerdown r5f core on AM64'
+  d16c3d40dedfb:
+    class: P
+    subject: 'PENDING: thermal: k3_j72xx_bandgap: Change init sequence to IP spec'
+  5b2e3b73c8c2d:
+    class: U
+    subject: 'UPSTREAM: arm64: dts: ti: k3-am62: Add support for AM625 OLDI IO Control'
+    upstream: 779ea073dba35
+    lore: https://patch.msgid.link/20250913064205.4152249-2-s-jain1@ti.com
+  9c9f3777c4c73:
+    class: F
+    subject: 'FROMLIST: arm64: dts: ti: k3-am62-main: Add tidss clk-ctrl property'
+    lore: https://lore.kernel.org/all/20250730-fix-edge-handling-v1-3-1bdfb3fe7922@bootlin.com/
+  beb88173c1656:
+    class: U
+    subject: 'UPSTREAM: crypto: sa2ul - Fix AEAD fallback algorithm names'
+    upstream: 8451ab6ad686f
+  4961ac44628c2:
+    class: U
+    subject: 'UPSTREAM: arm64: dts: ti: k3-am62: Add RNG node'
+    upstream: 67106d2171701
+    lore: https://lore.kernel.org/r/20250926100229.923547-1-s-tripathi1@ti.com
+  f14cd3187b627:
+    class: P
+    subject: 'PENDING: arm64: dts: ti: k3-am6*: Add FSS_FSAS node for K3 SoCs'
+  f7090ee8fe052:
+    class: P
+    subject: 'PENDING: dt-bindings: memory: Add TI FSS_FSAS binding'
+  5ea86442c37b7:
+    class: P
+    subject: 'PENDING: arm64: dts: ti: k3-am6*-main: Add phase-detect-selector value in device tree'
+  7776e825a6703:
+    class: P
+    subject: 'PENDING: dt-bindings: cdns,qspi-nor: Introduce phase-detect-selector property'
+  b55e779737077:
+    class: F
+    subject: 'FROMLIST: dt-bindings: gpu: img: Add AM62P SoC specific compatible'
+    upstream: 5abffd7ff012c
+    lore: https://lore.kernel.org/all/20251223124729.2482877-2-mwalle@kernel.org/
+  cfdb373285c71:
+    class: F
+    subject: 'FROMLIST: dt-bindings: gpu: img: Add J721e SoC specific compatible'
+    lore: https://lore.kernel.org/all/20260224-gpu_dts-v1-2-cc5ddffe140c@ti.com/
+  2282caa22baa9:
+    class: F
+    subject: 'FROMLIST: dt-bindings: display: ti,am65x-dss: Add clk property for data edge synchronization'
+    lore: https://lore.kernel.org/all/20250730-fix-edge-handling-v1-1-1bdfb3fe7922@bootlin.com/
+  798d68f47deab:
+    class: F
+    subject: 'FROMLIST: dt-bindings: display: ti,am65x-dss: Add am62p dss compatible'
+    lore: https://lore.kernel.org/all/20260116095406.2544565-2-s-jain1@ti.com/
+  cc7c8f4874ffb:
+    class: P
+    subject: 'PENDING: dt-bindings: mux: correct typos and dt node example reg entry'
+  f637c8677ca41:
+    class: P
+    subject: 'PENDING: arm64: dts: ti: k3-am62-main: Add timesync router node'
+  72cc02f012502:
+    class: P
+    subject: 'PENDING: mux-controller: ti: add driver for event mux router'
+  909f13babdd96:
+    class: P
+    subject: 'PENDING: dt-bindings: mux-controller: ti: add binding for event mux router'
+  28671bc5b1e59:
+    class: P
+    subject: 'PENDING: arm64: dts: ti: Set McASP fck rate to 320 MHz on AM62x/J722s SoCs'
+  9ecb33f78cea9:
+    class: P
+    subject: 'PENDING: arm64: dts: ti: k3-am62*: Enable all CSI DMA chans'
+  a94dcedd2ce88:
+    class: F
+    subject: 'FROMLIST: ASoC: dt-bindings: davinci-mcasp: Add properties for asynchronous mode'
+    upstream: f1ef70a4a3204
+    lore: https://lore.kernel.org/all/20260203003703.2334443-2-sen@ti.com/
+  69a113ecbdc6d:
+    class: F
+    subject: 'FROMLIST: dt-bindings: media: ti,j721e-csi2rx-shim: Support 32 dma chans'
+    upstream: bfd10a287ca27
+    lore: https://software-dl.ti.com/processor-sdk-linux/esd/AM62X/10_00_07_04/exports/docs/linux/How_to_Guides/Host/K3_Resource_Partitioning_Tool.html
+  af0a762849b35:
+    class: P
+    subject: 'PENDING: dt-bindings: serial: add binding documentation for TI PRUSS UART'
+  f662557f24fb1:
+    class: P
+    subject: 'PENDING: arm64: dts: ti: k3-am62-main: Add PRU UART node'
+  3c77b6800e054:
+    class: P
+    subject: 'PENDING: arm64: dts: ti: k3-am625: Add ti,soc-info to OPP table'
+undescribed:
+- device: AM62X_DEV_CMP_EVENT_INTROUTER0 (1)
+  note: compare-event interrupt router (timer compare events); no node in any K3 dtsi on either side, no Linux consumer - fine
+- device: AM62X_DEV_DMASS0_RINGACC_0 (33)
+  note: ring accelerator, unused with BCDMA/PKTDMA - fine
+- device: AM62X_DEV_WKUP_GTC0 (61), AM62X_DEV_WKUP_ESM0 (64)
+  note: firmware territory - fine
+- device: AM62X_DEV_LED0 (83)
+  note: unknown block, no node anywhere (?)
+- device: AM62X_DEV_MCU_MCRC64_0 (100), AM62X_DEV_MCRC64_0 (116)
+  note: 64-bit CRC engines; TI's 6.6/6.12 kernels had a driver and a node (crc@30300000), 6.18 and mainline have neither - see the MCRC64 feature row
+- device: AM62X_DEV_WKUP_TIMER0/1 (110/111)
+  note: no wakeup-domain timer nodes on either side; TI's wakeup-sources page lists WKUP_TIMER0/1 as wakeup source IDs, nothing on lore (?)
+- device: AM62X_DEV_DDR16SS0 (170)
+  note: the 16-bit DDR subsystem; TI's 6.12 kernel had the k3-ddr temperature driver and a node, 6.18 and mainline have neither - see the DDR subsystem feature row
+- device: AM62X_DEV_HSM0 (225)
+  note: HSM M4F, firmware-owned; TI's HSM M4F DT series (v3 14.01.2026) and the U-Boot HSM boot series (v7 22.09.2026) cover AM62P/J722S/J721S2/J784S4, not AM62x - fine
+sdk:
+  version: '12.01'
+  page: power management page
+  date: '2026-07-28'
+  claims:
+  - feature: DeepSleep
+    upstream: 'yes'
+    notes: 'remoteproc graceful shutdown is not upstream (v2 25.11.2025 open); TI''s workaround on mainline: rmmod ti_k3_m4_remoteproc before suspend'
+  - feature: MCU Only
+    upstream: 'yes'
+    notes: same remoteproc limitation
+  - feature: Partial I/O
+    upstream: 'yes'
+  - feature: Dynamic Frequency Scaling
+    upstream: 'yes'
+  - feature: Standby
+    upstream: 'no'
+    notes: DT idle-state series v1 20.08.2026 open, not on TI's page yet
+  - feature: Runtime PM
+    upstream: 'yes'
+  - feature: Wakeup RTC, MCU (WKUP) GPIO, USB, WKUP UART
+    upstream: yes (DeepSleep, MCU Only)
+  - feature: Wakeup Main I/O daisy chain
+    upstream: partial
+    notes: Main UART yes (k3-am62x-sk-common in v7.1), Main GPIO no (TI HACK in pinctrl-single)
+  - feature: Wakeup MCU IPC
+    upstream: MCU Only
+  - feature: Wakeup CAN I/O daisy chain
+    upstream: Partial I/O only
+    notes: m_can out-of-band wakeup v8 01.10.2026, DT v3 12.09.2026, both open
+  - feature: Pending series
+    upstream: none listed for AM62x
+    notes: the trees say otherwise, see above
+  remarks:
+  - 'Docs cross-check (processor-sdk-doc clone 2026-10-06): of the 31 kernel-driver pages TI builds for AM62X, two describe drivers no 6.18 kernel has - MCRC64 (CRYPTO_DEV_TI_MCRC64, page last changed 30.11.2024)
+    and K3 DDR (CONFIG_K3_DDR_TEMP, 09.12.2025); both drivers live in ti-linux-6.12.y only. The TSN pages (EST, CBS, IET, tuning) map to the Ethernet row, the PRU-ICSS pages to the PRU row (the pruss-uart
+    page, 14.05.2026, documents the TI-only driver), "IPC for AM62x" to the IPC row, the power-management pages to the low-power, RTC and thermal rows, the graphics pages to the GPU and Display rows. NETCONF/YANG,
+    UBIFS, Jailhouse, SELinux, fTPM, PQC, OP-TEE/ATF and the ML runtimes are not SoC components. The wakeup-sources page marks WKUP I/O daisy chain and RTC I/O as not applicable for AM62x and lists WKUP_I2C0
+    and WKUP_TIMER0/1 among the wakeup source IDs (WKUP_TIMER0/1 undescribed).'
+  - 'Other TI pages with upstream statements: Graphics build guide (open-source stack available for the AXE-1-16M core: kernel module upstream, firmware in linux-firmware, Vulkan via Mesa, GL 2.1 via Zink,
+    Zink not mainline and experimental); the CPUIdle page describes Standby as the WFI C-state through cpuidle.'
+lists:
+  date: '2026-10-09'
+  series:
+  - series: 'drm/tidss: Preparation for AM62P and BeagleY-AI display support v1'
+    for: display
+    state: open, reviewed/tested by TI (03.09.2026)
+    link: https://lore.kernel.org/all/20260903-tidss-pre-beagley-v1-0-93928baa8b12@ideasonboard.com/
+  - series: BeagleY-AI display v3 (AM62P DSS, OLDI aux driver)
+    for: display
+    state: superseded by the prep series, repost expected
+    link: https://lore.kernel.org/all/20260529-beagley-ai-display-v3-12-7fefdc5d1adf@ideasonboard.com/
+  - series: 'arm64: ti: Use syscon for the Control Module (6 patches)'
+    for: DT cosmetics (dss-oldi-io-ctrl rename)
+    state: open (28.05.2026), binding comments, no v2
+    link: https://lore.kernel.org/all/20260528-ti-main-conf-v1-0-a54ac5c8d081@ideasonboard.com/
+  - series: 'arm64: dts: ti: add standby cpu idle state to AM62 SoCs v1'
+    for: low power (Standby)
+    state: open (20.08.2026), discussed until 11.09.2026, no v2
+    link: https://lore.kernel.org/all/20260820-upstream-standby-v1-0-6a0553b9713d@ti.com/
+  - series: 'arm64: dts: ti: use ti,am62-mcan compatible for m_can devices v3'
+    for: low power (CAN wake)
+    state: open (12.09.2026), bot replies only; v1 20.08.2026 (out-band-wakeup property) and v2 02.09.2026 superseded
+    link: https://lore.kernel.org/all/20260912-smth-v3-0-6fa661ae5a4c@ti.com/
+  - series: 'can: m_can: introduce ti,am62-mcan compatible for out-of-band wakeup v8'
+    for: low power (CAN wake)
+    state: open (01.10.2026)
+    link: https://lore.kernel.org/all/20261001-temp-v8-0-489dd82e4b50@ti.com/
+  - series: 'PM: QoS/pmdomains: support resume latencies for system-wide PM v6'
+    for: low power
+    state: open (24.09.2026)
+    link: https://lore.kernel.org/all/20260924-topic-lpm-pmdomain-device-constraints-v6-0-a69a4856252b@baylibre.com/
+  - series: 'arm64: dts: ti: k3-am62-mcu: Add power-domains property for M4FSS'
+    for: M4F
+    state: open (22.09.2026), review by Andrew Davis 07.10.2026
+    link: https://lore.kernel.org/all/20260922171942.201947-1-sid9.karanam@gmail.com/
+  - series: 'remoteproc: k3: support for graceful shutdown of remote cores v2'
+    for: M4F, low power
+    state: open since 25.11.2025, discussion ended 21.01.2026, no v3
+    link: https://lore.kernel.org/all/20251125083746.2605721-1-b-padhi@ti.com/
+  - series: 'memory: ti-k3-fsas: Add TI FSS_FSAS driver v2'
+    for: OSPI
+    state: open since 29.06.2026, review comments 08.07.2026, no v3, not in -next
+    link: https://lore.kernel.org/all/20260629072055.896322-1-s-k6@ti.com/
+  - series: 'spi: cadence-quadspi: add PHY tuning support v10 (19 patches)'
+    for: OSPI
+    state: open (29.09.2026)
+    link: https://lore.kernel.org/all/20260929063529.1235417-1-s-k6@ti.com/
+  - series: Add TI's event mux router driver and build
+    for: timesync
+    state: open (28.08.2026), binding discussion until 19.09.2026
+    link: https://lore.kernel.org/all/20260828100615.1700223-1-r-sharma3@ti.com/
+  - series: 'Introduce PRU UART driver (serial: 8250: Add PRUSS UART driver)'
+    for: PRU
+    state: stalled after review 16.05.2025, no v2
+    link: https://lore.kernel.org/all/20250513215934.933807-1-jm@ti.com/
+  - series: 'irqchip/irq-pruss-intc: fixes v2 (3 patches)'
+    for: PRU
+    state: open (18.02.2026), not in -next
+    link: https://lore.kernel.org/all/20260218093730.3123342-2-m-malladi@ti.com/
+  - series: 'net: ethernet: ti: am65-cpsw: add AF_XDP zero copy support v2'
+    for: Ethernet
+    state: open since 09.11.2025, no v3
+    link: https://lore.kernel.org/all/20251109-am65-cpsw-xdp-zc-v2-0-858f60a09d12@kernel.org/
+  - series: 'dmaengine: ti: k3-udma-v2 (AM62L BCDMA/PKTDMA V2) v12'
+    for: DMA
+    state: open (07.10.2026)
+    link: https://lore.kernel.org/all/20261007102936.2402427-1-s-adivi@ti.com/
+  - series: 'media: csi2rx: Support RAW12 bayer formats (2 patches)'
+    for: camera
+    state: applied, linux-next 11.09.2026 (v7.4)
+    link: https://lore.kernel.org/all/20260625151756.221096-1-y-abhilashchandra@ti.com/
+  - series: Add DT support for CSI2RX multi-stream v3 (18 patches)
+    for: camera
+    state: open (23.09.2026), no replies; covers AM62P/J722S/J7, not AM62x
+    link: https://lore.kernel.org/all/20260923093459.28125-1-y-abhilashchandra@ti.com/
+  - series: 'cpufreq: ti: Fix probe ordering and add device link support for K3 SoCs v2'
+    for: thermal / cpufreq
+    state: 'partially applied: EPROBE_DEFER in v7.2; soc-info binding, device link and DT open, no v3'
+    link: https://lore.kernel.org/all/20260401105404.1194717-1-a-kaur@ti.com/
+  - series: 'wifi: cc33xx v5 (17 patches)'
+    for: WiFi
+    state: last version 07.11.2024, no v6
+    link: https://lore.kernel.org/all/20241107125209.1736277-1-michael.nemanov@ti.com/
+  - series: Add support for MCRC64 engine to calculate 64-bit CRC in Full-CPU mode v3
+    for: MCRC64
+    state: 'rejected (13.09.2024): no in-kernel user for crc64-iso3309; no v4'
+    link: https://lore.kernel.org/all/20240524-mcrc64-upstream-v3-0-24b94d8e8578@ti.com/
+  - series: Add TI K3 DDR subsystem drivers and DT bindings (RFC, 22 patches)
+    for: DDR subsystem
+    state: 'open (14.07.2026): bindings NAKed, no v2'
+    link: https://lore.kernel.org/all/20260714125532.3304178-1-v-mannuru@ti.com/
+notes:
+- 'Landed in mainline since the TI 6.18 branch point (TI prefixes stale): tidss OLDI bridge (v6.17), tidss vblank time (v6.19), ti_sci Partial-IO (v6.19), ti-sci-intr per-line interrupt types and am65-cpsw
+  ALE multicast fix (v7.0), davinci-mcasp asynchronous mode, pdir and ifdef cleanup (v7.0), davinci-mcasp system suspend/resume and aux_div (v7.1), pinctrl ti,am62l-padconf (v7.1), k3-am62x-sk-common Main
+  UART wakeup (v7.1), rtc-ti-k3 IO DDR resume (v7.1), ti_sci IRQ/clock context restore, sci-clk restore_context, BOARDCFG_MANAGED and clk-keystone rate caching (v7.2), j721e-csi2rx runtime PM, system suspend
+  and multistream (v7.2), davinci-mcasp audio-graph-card2 (v7.2), rti_wdt reaction control (v7.2), cpufreq ti EPROBE_DEFER (v7.2).'

@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}{{ soc.name }} · K3 upstream status{% endblock %}
+{% block description %}Mainline state of every feature and IP block of the TI {{ soc.name }}.{% endblock %}
+{% set has_patches = soc.patch_count > 0 %}
+{% macro plist(patches) %}
+    <ul class="plist">
+    {% for p in patches %}
+      <li><span class="pc pc-{{ p.class|pc }}" title="{{ patch_classes[p.class][1] }}">{{ patch_classes[p.class][0] }}</span><span class="psub"><a href="{{ p.href }}" title="{{ p.subject }}">{{ p.title }}</a></span><span class="plinks">{% if p.upstream_href %}<a href="{{ p.upstream_href }}">{{ 'mainline' if p.class == 'U' else 'landed' }}</a>{% endif %}{% if p.lore %}{% if p.upstream_href %} · {% endif %}<a href="{{ p.lore }}">lore</a>{% endif %}</span></li>
+    {% endfor %}
+    </ul>
+{% endmacro %}
+
+{% block main %}
+<nav class="crumbs"><a href="{{ root }}index.html">Status</a><span>›</span><span>{{ soc.name }}</span></nav>
+<header class="page-head">
+  <h1>{{ soc.name }}{% if soc.detail %} <small>{{ soc.detail }}</small>{% endif %}</h1>
+  <p class="sub">Inventory run {{ soc.run or '–' }}{% if soc.mainline %} against mainline {{ soc.mainline }}{% if soc.snapshot %} ({{ soc.snapshot|de }}){% endif %}{% endif %}.</p>
+  <dl class="facts">
+  {% for k, v in soc.facts %}<div><dt>{{ k }}</dt><dd>{{ v|inline }}</dd></div>{% endfor %}
+  </dl>
+</header>
+
+<section id="features">
+  <div class="section-head">
+    <h2>Features</h2>
+    <div class="counts">{% for cls in main_states %}{% if soc.feature_counts[cls] %}<span class="chip st-{{ cls }}"><i></i>{{ soc.feature_counts[cls] }} {{ states[cls][0]|lower }}</span>{% endif %}{% endfor %}</div>
+  </div>
+  <p class="sub">One row per feature bundle of <code>features/k3.yaml</code>. Kconfig marks are TI's SDK config; ~SYM = symbol only in the TI kernel, ?SYM = unknown anywhere. Patches are TI's commits on top of {{ soc.base or 'the stable base' }} that touch the feature, by prefix{% if has_patches %}; the <a href="#patches">patch list</a> has every one of them{% endif %}.</p>
+  <div class="table-wrap">
+  <table class="table features">
+    <thead><tr><th>Feature</th><th>State</th><th>Nodes</th><th>Drivers</th><th>Kconfig</th><th>Firmware</th><th>Patches</th><th>Gaps</th><th>Notes</th></tr></thead>
+    <tbody>
+    {% for r in soc.feature_rows %}
+    <tr id="{{ r.anchor }}">
+      <th>{{ r.name }}</th>
+      <td>{{ r.state|chip }}</td>
+      <td>{{ r.nodes }}</td>
+      <td>{{ r.drivers }}</td>
+      <td class="mono">{{ r.kconfig|join(' ') or '-' }}</td>
+      <td class="mono">{{ r.firmware }}</td>
+      <td class="mono num">{% if r.patches %}<a href="#p-{{ r.id }}">{{ r.patch_counts }}</a>{% if r.patch_pending %}<small>{{ r.patch_pending }} not upstream</small>{% endif %}{% if r.patch_landed %}<small>{{ r.patch_landed }} landed</small>{% endif %}{% else %}–{% endif %}</td>
+      <td class="wide">{{ r.gaps|join('; ')|inline }}</td>
+      <td class="wide">{{ r.notes|inline }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% if has_patches %}
+<section id="patches" class="patches">
+  <div class="section-head">
+    <h2>TI patches</h2>
+    <div class="counts">{% for k, (label, _) in patch_classes.items() %}{% if soc.patch_counts[k] %}<span class="chip"><span class="pc pc-{{ k|pc }}">{{ label }}</span>{{ soc.patch_counts[k] }}</span>{% endif %}{% endfor %}{% if soc.patch_pending %}<span class="chip"><b>{{ soc.patch_pending }}</b>&nbsp;not upstream</span>{% endif %}{% if soc.patch_landed %}<span class="chip"><b>{{ soc.patch_landed }}</b>&nbsp;landed since</span>{% endif %}</div>
+  </div>
+  <p class="sub">{{ soc.patch_count }} commits of the vendor kernel on top of {{ soc.base }}{% if soc.commits %} (of {{ soc.commits }}){% endif %} that touch a feature or component, newest first, each linked to TI's git. {% for k, (label, meaning) in patch_classes.items() %}<b>{{ label }}</b>: {{ meaning }}{{ '; ' if not loop.last else '.' }}{% endfor %} A posted or not posted patch marked "landed" has a mainline commit with the same subject since the branch point and does not count as not upstream. A commit can serve several rows.</p>
+  <h3>By feature</h3>
+  {% for r in soc.feature_rows if r.patches %}
+  <details id="p-{{ r.id }}">
+    <summary><b>{{ r.name }}</b><span class="pcounts">{{ r.patch_counts }}</span><small>{{ r.patches|length }} patches{% if r.patch_pending %}, {{ r.patch_pending }} not upstream{% endif %}{% if r.patch_landed %}, {{ r.patch_landed }} landed{% endif %}</small></summary>
+    {{ plist(r.patches) }}
+  </details>
+  {% endfor %}
+  {% if soc.component_patch_rows %}
+  <h3>By component</h3>
+  <p class="sub">The patches touching a component's driver or binding files, or its node in the SoC dtsi files.</p>
+  {% for c in soc.component_patch_rows %}
+  <details id="{{ c.panchor }}">
+    <summary><b class="mono">{{ c.name }}</b><span class="pcounts">{{ c.patch_counts }}</span><small>{{ c.patches|length }} patches{% if c.patch_pending %}, {{ c.patch_pending }} not upstream{% endif %}{% if c.patch_landed %}, {{ c.patch_landed }} landed{% endif %}</small></summary>
+    {{ plist(c.patches) }}
+  </details>
+  {% endfor %}
+  {% endif %}
+</section>
+{% endif %}
+
+<section id="components">
+  <div class="section-head">
+    <h2>Components</h2>
+    <div class="filters">
+      <input id="cfilter" type="search" placeholder="Filter by node, driver, Kconfig, note…" aria-label="Filter components">
+      <div class="fchips">
+      {% for cls in main_states %}{% if soc.component_counts[cls] %}<button type="button" class="chip st-{{ cls }}" data-state="{{ cls }}"><i></i>{{ soc.component_counts[cls] }} {{ states[cls][0]|lower }}</button>{% endif %}{% endfor %}
+      </div>
+    </div>
+  </div>
+  <p class="sub">One row per block type and state of the vendor SoC device tree, in DT order; driver, Kconfig and state compare the vendor kernel with mainline{% if soc.components_have.dt %}, the DT column says whether TI's reference board enables the block{% endif %}{% if soc.components_have.patches %}, Patches are TI's commits on the block's driver, binding or node{% endif %}.</p>
+  <div class="table-wrap">
+  <table class="table components" id="ctable">
+    <thead><tr><th>Component</th><th>State</th>{% if soc.components_have.nodes %}<th>Nodes</th>{% endif %}<th>Driver</th><th>Kconfig</th>{% if soc.components_have.dt %}<th>DT</th>{% endif %}{% if soc.components_have.patches %}<th>Patches</th>{% endif %}<th>Notes</th></tr></thead>
+    <tbody>
+    {% for c in soc.components %}
+    <tr id="{{ c.anchor }}" data-state="{{ c.cls }}">
+      <th class="mono">{{ c.name }}{% if c.instances > 1 %} <span class="n">×{{ c.instances }}</span>{% endif %}{% if c.family %}<small>{{ c.family }}</small>{% endif %}</th>
+      <td>{{ c.state|chip }}</td>
+      {% if soc.components_have.nodes %}<td class="mono dim">{{ c.nodes|join(', ') }}</td>{% endif %}
+      <td class="mono">{{ c.driver }}</td>
+      <td class="mono">{{ c.kconfig }}</td>
+      {% if soc.components_have.dt %}<td class="mono">{{ c.dt }}</td>{% endif %}
+      {% if soc.components_have.patches %}<td class="mono num">{% if c.patches %}<a href="#{{ c.panchor }}">{{ c.patch_counts }}</a>{% if c.patch_pending %}<small>{{ c.patch_pending }} not upstream</small>{% endif %}{% else %}–{% endif %}</td>{% endif %}
+      <td class="wide">{{ c.notes|inline }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="sub"><span id="ccount">{{ soc.components|length }}</span> of {{ soc.components|length }} rows shown.</p>
+</section>
+
+{% if soc.undescribed %}
+<section id="undescribed" class="prose">
+  <h2>Undescribed TISCI devices</h2>
+  <p>Hardware TI's system firmware knows that no kernel describes with a node.</p>
+  <ul class="devices">
+  {% for u in soc.undescribed %}<li><code>{{ u.device }}</code> {{ u.note|inline }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if soc.sdk %}
+<section id="sdk" class="prose">
+  <h2>TI SDK {{ soc.sdk.version }} upstream status</h2>
+  <p>TI's own claims{% if soc.sdk.page %}, from the {{ soc.sdk.page }}{% endif %}{% if soc.sdk.date %} ({{ soc.sdk.date }}){% endif %}. Where the trees disagree with the claim, the feature row says so.</p>
+  {% if soc.sdk.claims %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Feature</th><th>Upstream (TI)</th><th>Notes</th></tr></thead>
+    <tbody>{% for c in soc.sdk.claims %}<tr><th>{{ c.feature }}</th><td>{{ c.upstream }}</td><td class="wide">{{ c.notes|inline }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+  {% for p in soc.sdk.remarks %}<p>{{ p|inline }}</p>{% endfor %}
+</section>
+{% endif %}
+
+{% if soc.lists %}
+<section id="lists" class="prose">
+  <h2>Mailing lists{% if soc.lists.date %} <small>{{ soc.lists.date }}</small>{% endif %}</h2>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Series</th><th>For</th><th>State</th><th>Link</th></tr></thead>
+    <tbody>{% for x in soc.lists.series %}<tr><th class="wrap">{{ x.series }}</th><td>{{ x.for }}</td><td class="wide">{{ x.state|inline }}</td><td class="mono">{% if x.link %}<a href="{{ x.link }}">{{ x.link|short }}</a>{% endif %}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endif %}
+
+{% if soc.notes %}
+<section id="notes" class="prose">
+  <h2>Notes</h2>
+  {% for p in soc.notes %}<p>{{ p|inline }}</p>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}
